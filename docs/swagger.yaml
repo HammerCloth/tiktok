@@ -1,0 +1,8 @@
+host: localhost:8080
+info:
+  contact: {}
+  description: ApiDoc
+  title: TikTok swagger
+  version: "1.0"
+paths: {}
+swagger: "2.0"
