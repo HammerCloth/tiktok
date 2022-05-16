@@ -20,10 +20,3 @@ type LikeService interface {
 	//获取当前用户的所有点赞视频，调用videoService的方法
 	GetFavouriteList(userId int64) ([]Video, error)
 }
-
-type Like struct {
-	Id       int64
-	User_id  int64
-	Video_id int64
-	Cancel   int8
-}
