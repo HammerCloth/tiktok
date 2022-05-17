@@ -59,6 +59,14 @@ func (usi *UserServiceImpl) GetTableUserById(id int64) TableUser {
 	}
 }
 
+func (usi *UserServiceImpl) InsertTableUser(tableUser *TableUser) bool {
+	if err := dao.Db.Create(&tableUser).Error; err != nil {
+		log.Println("插入失败")
+		return false
+	}
+	return true
+}
+
 func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	tableUser := TableUser{}
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
@@ -69,7 +77,8 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	} else {
 		log.Println("未找到该用户")
 	}
-	impl := UserServiceImpl{}
+	fsi := new(FollowServiceImpl)
+	impl := UserServiceImpl{fsi}
 	followCount, _ := impl.FollowService.GetFollowingCnt(id)
 	followerCount, _ := impl.FollowService.GetFollowerCnt(id)
 	user := User{
@@ -92,7 +101,8 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	} else {
 		log.Println("未找到该用户")
 	}
-	impl := UserServiceImpl{}
+	fsi := new(FollowServiceImpl)
+	impl := UserServiceImpl{fsi}
 	followCount, _ := impl.FollowService.GetFollowingCnt(id)
 	followerCount, _ := impl.FollowService.GetFollowerCnt(id)
 	isfollow, _ := impl.FollowService.IsFollowing(curId, id)
@@ -106,13 +116,23 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	return user, errors.New("query fail")
 }
 
+func GenerateToken(username string) string {
+	u := UserService.GetTableUserByUsername(new(UserServiceImpl), username)
+	fmt.Printf("generatetoken: %v\n", u)
+	token := NewToken(u)
+	println(token)
+	return token
+}
+
 func NewToken(u *TableUser) string {
 	expiresTime := time.Now().Unix() + int64(config.OneDayOfHours)
 	fmt.Printf("%v\n", expiresTime)
+	id64 := u.Id
+	fmt.Printf("newtoken: %v\n", strconv.FormatInt(id64, 10))
 	claims := jwt.StandardClaims{
 		Audience:  u.Name,
 		ExpiresAt: expiresTime,
-		Id:        strconv.FormatInt(1, 10),
+		Id:        strconv.FormatInt(id64, 10),
 		IssuedAt:  time.Now().Unix(),
 		Issuer:    "tiktok",
 		NotBefore: time.Now().Unix(),

@@ -24,7 +24,8 @@ func Auth() gin.HandlerFunc {
 			})
 		}
 		auth = strings.Fields(auth)[1]
-		_, err := parseToken(auth)
+		token, err := parseToken(auth)
+		context.Set("userId", token.Id)
 		if err != nil {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{

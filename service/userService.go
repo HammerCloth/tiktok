@@ -13,6 +13,8 @@ type UserService interface {
 	// GetTableUserById GetUserById 根据user_id获得TableUser对象
 	GetTableUserById(id int64) TableUser
 
+	// InsertTableUser 将tableUser插入表内
+	InsertTableUser(tableUser *TableUser) bool
 	/*
 		他人使用
 	*/
@@ -24,7 +26,7 @@ type UserService interface {
 
 	// 根据token返回id
 	// 接口:auth中间件,解析完token,将userid放入context
-	//(调用方法:直接在context内拿参数"user_id"的值)
+	//(调用方法:直接在context内拿参数"userId"的值)	fmt.Printf("userInfo: %v\n", c.GetString("userId"))
 }
 
 type User struct {
