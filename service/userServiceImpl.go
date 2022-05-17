@@ -72,10 +72,11 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
 		log.Println(err.Error())
 	}
-	if tableUser.Id == id {
-		log.Println("查询成功")
-	} else {
+	if tableUser.Id != id {
 		log.Println("未找到该用户")
+		return User{}, errors.New("query fail")
+	} else {
+		log.Println("查询成功")
 	}
 	fsi := new(FollowServiceImpl)
 	impl := UserServiceImpl{fsi}
@@ -88,7 +89,7 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 		FollowerCount: followerCount,
 		IsFollow:      false,
 	}
-	return user, errors.New("query fail")
+	return user, nil
 }
 
 func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, error) {
@@ -96,10 +97,11 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
 		log.Println(err.Error())
 	}
-	if tableUser.Id == id {
-		log.Println("查询成功")
-	} else {
+	if tableUser.Id != id {
 		log.Println("未找到该用户")
+		return User{}, errors.New("query fail")
+	} else {
+		log.Println("查询成功")
 	}
 	fsi := new(FollowServiceImpl)
 	impl := UserServiceImpl{fsi}
@@ -113,7 +115,7 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 		FollowerCount: followerCount,
 		IsFollow:      isfollow,
 	}
-	return user, errors.New("query fail")
+	return user, nil
 }
 
 func GenerateToken(username string) string {
