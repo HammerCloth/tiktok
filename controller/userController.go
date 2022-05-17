@@ -81,12 +81,12 @@ func UserInfo(c *gin.Context) {
 
 	if u, err := service.UserService.GetUserById(new(service.UserServiceImpl), id); err != nil {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 0},
-			User:     u,
+			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
 	} else {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: Response{StatusCode: 0},
+			User:     u,
 		})
 	}
 }
