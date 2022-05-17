@@ -13,6 +13,8 @@ type Response struct {
 	StatusMsg  string `json:"status_msg,omitempty"`
 }
 
+// Auth 鉴权中间件
+// 若用户携带的token正确,解析token,将userId放入上下文context中并放行;否则,返回错误信息
 func Auth() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		auth := context.Request.Header.Get("Authorization")
@@ -29,7 +31,7 @@ func Auth() gin.HandlerFunc {
 		if err != nil {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{
-				StatusMsg: "token 无效",
+				StatusMsg: "Token Error",
 			})
 		} else {
 			println("token 正确")
@@ -38,6 +40,7 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
+// parseToken 解析token
 func parseToken(token string) (*jwt.StandardClaims, error) {
 	jwtToken, err := jwt.ParseWithClaims(token, &jwt.StandardClaims{}, func(token *jwt.Token) (i interface{}, e error) {
 		return []byte(config.Secret), nil

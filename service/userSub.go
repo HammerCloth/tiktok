@@ -1,6 +1,7 @@
 package service
 
-type FollowServiceImpl struct {
+// 如果要实现用户登录所有功能,将下方代码恢复
+/*type FollowServiceImpl struct {
 }
 
 func (fsi *FollowServiceImpl) IsFollowing(userId int64, targetId int64) (bool, error) {
@@ -29,4 +30,4 @@ func (fsi *FollowServiceImpl) GetFollowing(userId int64) ([]User, error) {
 
 func (fsi *FollowServiceImpl) GetFollowers(userId int64) ([]User, error) {
 	return nil, nil
-}
+}*/

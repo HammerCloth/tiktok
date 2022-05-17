@@ -18,10 +18,12 @@ type UserServiceImpl struct {
 	FollowService
 }
 
+// TableName 修改表名映射
 func (tableUser TableUser) TableName() string {
 	return "users"
 }
 
+// GetTableUserList 获得全部TableUser对象
 func (usi *UserServiceImpl) GetTableUserList() []TableUser {
 	tableUsers := []TableUser{}
 	if err := dao.Db.Find(&tableUsers).Error; err != nil {
@@ -31,6 +33,7 @@ func (usi *UserServiceImpl) GetTableUserList() []TableUser {
 	return tableUsers
 }
 
+// GetTableUserByUsername 根据username获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserByUsername(name string) TableUser {
 	tableUser := TableUser{}
 	if err := dao.Db.Where("name = ?", name).First(&tableUser).Error; err != nil {
@@ -45,6 +48,7 @@ func (usi *UserServiceImpl) GetTableUserByUsername(name string) TableUser {
 	}
 }
 
+// GetTableUserById 根据user_id获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserById(id int64) TableUser {
 	tableUser := TableUser{}
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
@@ -59,6 +63,7 @@ func (usi *UserServiceImpl) GetTableUserById(id int64) TableUser {
 	}
 }
 
+// InsertTableUser 将tableUser插入表内
 func (usi *UserServiceImpl) InsertTableUser(tableUser *TableUser) bool {
 	if err := dao.Db.Create(&tableUser).Error; err != nil {
 		log.Println("插入失败")
@@ -67,6 +72,7 @@ func (usi *UserServiceImpl) InsertTableUser(tableUser *TableUser) bool {
 	return true
 }
 
+// GetUserById 未登录情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	tableUser := TableUser{}
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
@@ -92,6 +98,7 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	return user, nil
 }
 
+// GetUserByIdWithCurId 已登录(curID)情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, error) {
 	tableUser := TableUser{}
 	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
@@ -118,6 +125,7 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	return user, nil
 }
 
+// GenerateToken 根据username生成一个token
 func GenerateToken(username string) string {
 	u := UserService.GetTableUserByUsername(new(UserServiceImpl), username)
 	fmt.Printf("generatetoken: %v\n", u)
@@ -126,6 +134,7 @@ func GenerateToken(username string) string {
 	return token
 }
 
+// NewToken 根据信息创建token
 func NewToken(u TableUser) string {
 	expiresTime := time.Now().Unix() + int64(config.OneDayOfHours)
 	fmt.Printf("%v\n", expiresTime)
@@ -152,6 +161,7 @@ func NewToken(u TableUser) string {
 	}
 }
 
+// EnCoder 密码加密
 func EnCoder(password string) string {
 	h := hmac.New(sha256.New, []byte(password))
 	sha := hex.EncodeToString(h.Sum(nil))
