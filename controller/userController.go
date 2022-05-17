@@ -3,6 +3,8 @@ package controller
 import (
 	"TikTok/service"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 type Response struct {
@@ -22,73 +24,69 @@ type UserResponse struct {
 }
 
 func Register(c *gin.Context) {
-	/*username := c.Query("username")
+	username := c.Query("username")
 	password := c.Query("password")
 
-	u := new(service.User)
+	usi := service.UserServiceImpl{}
 
-	if u.GetUserByUsername(username) {
+	u := usi.GetTableUserByUsername(username)
+	if username == u.Name {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: pojo.Response{StatusCode: 1, StatusMsg: "User already exist"},
+			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
 		})
 	} else {
-		newUser := &service.User{
+		newUser := service.TableUser{
 			Name:     username,
 			Password: service.EnCoder(password),
 		}
-		if newUser.InsertUser() != true {
+		if usi.InsertTableUser(&newUser) != true {
 			println("insert data fail")
 		}
 		token := service.GenerateToken(username)
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: pojo.Response{StatusCode: 0},
+			Response: Response{StatusCode: 0},
 			UserId:   u.Id,
 			Token:    token,
 		})
-	}*/
+	}
 }
 
 func Login(c *gin.Context) {
-	/*username := c.Query("username")
+	username := c.Query("username")
 	password := c.Query("password")
 	encoderPassword := service.EnCoder(password)
 	println(encoderPassword)
-	u := new(service.User)
-	u.GetUserByUsername(username)
+
+	usi := service.UserServiceImpl{}
+
+	u := usi.GetTableUserByUsername(username)
 
 	if encoderPassword == u.Password {
 		token := service.GenerateToken(username)
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: pojo.Response{StatusCode: 0},
+			Response: Response{StatusCode: 0},
 			UserId:   u.Id,
 			Token:    token,
 		})
 	} else {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: pojo.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
-	}*/
+	}
 }
 
 func UserInfo(c *gin.Context) {
-	/*user_id := c.Query("user_id")
+	user_id := c.Query("user_id")
 	id, _ := strconv.ParseInt(user_id, 10, 64)
-	u := new(service.User)
-	if  u.GetUserById(id) {
-		user := pojo.User{
-			Id:            u.Id,
-			Name:          u.Name,
-			FollowCount:   1,
-			FollowerCount: 1,
-			IsFollow:      true,
-		}
+
+	if u, err := service.UserService.GetUserById(new(service.UserServiceImpl), id); err != nil {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: pojo.Response{StatusCode: 0},
-			User:     user,
+			Response: Response{StatusCode: 0},
+			User:     u,
 		})
 	} else {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: pojo.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
-	}*/
+	}
 }
