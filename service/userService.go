@@ -5,13 +5,13 @@ type UserService interface {
 		个人使用
 	*/
 	// GetTableUserList GetUserList 获得全部TableUser对象
-	GetTableUserList(users *[]TableUser) bool
+	GetTableUserList() ([]TableUser, bool)
 
 	// GetTableUserByUsername GetUserByUsername 根据username获得TableUser对象
-	GetTableUserByUsername(name string) bool
+	GetTableUserByUsername(name string) (TableUser, bool)
 
 	// GetTableUserById GetUserById 根据user_id获得TableUser对象
-	GetTableUserById(id int64) bool
+	GetTableUserById(id int64) (TableUser, bool)
 
 	/*
 		他人使用
@@ -27,12 +27,6 @@ type UserService interface {
 	//(调用方法:直接在context内拿参数"user_id"的值)
 }
 
-type TableUser struct {
-	Id       int64
-	Name     string
-	Password string
-}
-
 /*type User struct {
 	Id            int64  `json:"id,omitempty"`
 	Name          string `json:"name,omitempty"`
@@ -41,3 +35,9 @@ type TableUser struct {
 	IsFollow      bool   `json:"is_follow,omitempty"`
 }
 */
+
+type TableUser struct {
+	Id       int64
+	Name     string
+	Password string
+}
