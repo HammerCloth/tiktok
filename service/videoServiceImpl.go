@@ -43,10 +43,10 @@ func (videoService VideoServiceImpl) List(userId int64) ([]Video, error) {
 		//进行拷贝操作
 		copier.Copy(&video, &temp)
 		//获取对应的user
-		//video.Author,err = videoService.GetUserById(temp.AuthorId)
-		//if err != nil {
-		//	return nil, err
-		//}
+		video.Author, err = videoService.GetUserByIdWithCurId(temp.AuthorId, temp.AuthorId)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, video)
 	}
 	return result, nil
