@@ -27,12 +27,3 @@ type FollowService interface {
 	// GetFollowers 获取当前用户的粉丝列表
 	GetFollowers(userId int64) ([]User, error)
 }
-
-// User 用户结构信息
-type User struct {
-	Id            int64  `json:"id"`
-	Name          string `json:"name"`
-	FollowCount   int64  `json:"follow_count"`
-	FollowerCount int64  `json:"follower_count"`
-	isFollow      bool   `json:"is_follow"`
-}
