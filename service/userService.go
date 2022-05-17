@@ -17,7 +17,6 @@ type UserService interface {
 		他人使用
 	*/
 	// GetUserById 未登录情况下,根据user_id获得User对象
-	//(调用方法:user.GetUserById,user会被填充;若填充失败,则返回false,成功,返回true)
 	GetUserById(id int64) (User, error)
 
 	// GetUserByIdWithCurId 已登录(curID)情况下,根据user_id获得User对象
