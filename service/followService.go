@@ -1,7 +1,3 @@
-// Package service
-// @Description 定义用户关系接口及方法
-// @Author lls
-// @Update 20220516
 package service
 
 // FollowService 定义用户关系接口以及用户关系中的各种方法
@@ -26,13 +22,4 @@ type FollowService interface {
 	GetFollowing(userId int64) ([]User, error)
 	// GetFollowers 获取当前用户的粉丝列表
 	GetFollowers(userId int64) ([]User, error)
-}
-
-// User 用户结构信息
-type User struct {
-	Id            int64  `json:"id"`
-	Name          string `json:"name"`
-	FollowCount   int64  `json:"follow_count"`
-	FollowerCount int64  `json:"follower_count"`
-	isFollow      bool   `json:"is_follow"`
 }
