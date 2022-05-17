@@ -10,7 +10,7 @@ var Db *gorm.DB
 
 func init() {
 	var err error
-	Db, err = gorm.Open("mysql", "douyin:zjqxy@tcp(43.138.25.60:3306)/douyin/")
+	Db, err = gorm.Open("mysql", "douyin:zjqxy@tcp(43.138.25.60:3306)/douyin")
 	if err != nil {
 		log.Panicln("err:", err.Error())
 	}
