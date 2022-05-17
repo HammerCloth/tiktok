@@ -124,7 +124,7 @@ func GenerateToken(username string) string {
 	return token
 }
 
-func NewToken(u *TableUser) string {
+func NewToken(u TableUser) string {
 	expiresTime := time.Now().Unix() + int64(config.OneDayOfHours)
 	fmt.Printf("%v\n", expiresTime)
 	id64 := u.Id
