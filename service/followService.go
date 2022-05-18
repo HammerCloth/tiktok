@@ -1,7 +1,3 @@
-// Package service
-// @Description 定义用户关系接口及方法
-// @Author lls
-// @Update 20220516
 package service
 
 // FollowService 定义用户关系接口以及用户关系中的各种方法

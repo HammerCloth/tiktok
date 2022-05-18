@@ -23,6 +23,7 @@ type UserResponse struct {
 	User service.User `json:"user"`
 }
 
+// Register POST douyin/user/register/ 用户注册
 func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
@@ -40,7 +41,7 @@ func Register(c *gin.Context) {
 			Password: service.EnCoder(password),
 		}
 		if usi.InsertTableUser(&newUser) != true {
-			println("insert data fail")
+			println("Insert Data Fail")
 		}
 		token := service.GenerateToken(username)
 		c.JSON(http.StatusOK, UserLoginResponse{
@@ -51,6 +52,7 @@ func Register(c *gin.Context) {
 	}
 }
 
+// Login POST douyin/user/login/ 用户登录
 func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
@@ -70,18 +72,19 @@ func Login(c *gin.Context) {
 		})
 	} else {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: Response{StatusCode: 1, StatusMsg: "Username or Password Error"},
 		})
 	}
 }
 
+// UserInfo GET douyin/user/ 用户信息
 func UserInfo(c *gin.Context) {
 	user_id := c.Query("user_id")
 	id, _ := strconv.ParseInt(user_id, 10, 64)
 
 	if u, err := service.UserService.GetUserById(new(service.UserServiceImpl), id); err != nil {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
+			Response: Response{StatusCode: 1, StatusMsg: "User Doesn't Exist"},
 		})
 	} else {
 		c.JSON(http.StatusOK, UserResponse{
