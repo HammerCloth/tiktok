@@ -6,7 +6,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"log"
@@ -18,54 +17,44 @@ type UserServiceImpl struct {
 	FollowService
 }
 
-// TableName 修改表名映射
-func (tableUser TableUser) TableName() string {
-	return "users"
-}
-
 // GetTableUserList 获得全部TableUser对象
-func (usi *UserServiceImpl) GetTableUserList() []TableUser {
-	tableUsers := []TableUser{}
-	if err := dao.Db.Find(&tableUsers).Error; err != nil {
-		log.Panicln("err:", err.Error())
+func (usi *UserServiceImpl) GetTableUserList() []dao.TableUser {
+	tableUsers, err := dao.NewUserDaoInstance().GetTableUserList()
+	if err != nil {
+		log.Println("Err:", err.Error())
 		return tableUsers
 	}
 	return tableUsers
 }
 
 // GetTableUserByUsername 根据username获得TableUser对象
-func (usi *UserServiceImpl) GetTableUserByUsername(name string) TableUser {
-	tableUser := TableUser{}
-	if err := dao.Db.Where("name = ?", name).First(&tableUser).Error; err != nil {
-		log.Println(err.Error())
-	}
-	if tableUser.Name == name {
-		log.Println("查询成功")
-		return tableUser
-	} else {
-		log.Println("未找到该用户")
+func (usi *UserServiceImpl) GetTableUserByUsername(name string) dao.TableUser {
+	tableUser, err := dao.NewUserDaoInstance().GetTableUserByUsername(name)
+	if err != nil {
+		log.Println("Err:", err.Error())
+		log.Println("User Not Found")
 		return tableUser
 	}
+	log.Println("Query User Success")
+	return tableUser
 }
 
 // GetTableUserById 根据user_id获得TableUser对象
-func (usi *UserServiceImpl) GetTableUserById(id int64) TableUser {
-	tableUser := TableUser{}
-	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
-		log.Println(err.Error())
-	}
-	if tableUser.Id == id {
-		log.Println("查询成功")
-		return tableUser
-	} else {
-		log.Println("未找到该用户")
+func (usi *UserServiceImpl) GetTableUserById(id int64) dao.TableUser {
+	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+		log.Println("User Not Found")
 		return tableUser
 	}
+	log.Println("Query User Success")
+	return tableUser
 }
 
 // InsertTableUser 将tableUser插入表内
-func (usi *UserServiceImpl) InsertTableUser(tableUser *TableUser) bool {
-	if err := dao.Db.Create(&tableUser).Error; err != nil {
+func (usi *UserServiceImpl) InsertTableUser(tableUser *dao.TableUser) bool {
+	flag := dao.NewUserDaoInstance().InsertTableUser(tableUser)
+	if flag == false {
 		log.Println("插入失败")
 		return false
 	}
@@ -74,21 +63,23 @@ func (usi *UserServiceImpl) InsertTableUser(tableUser *TableUser) bool {
 
 // GetUserById 未登录情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
-	tableUser := TableUser{}
-	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
-		log.Println(err.Error())
-	}
-	if tableUser.Id != id {
-		log.Println("未找到该用户")
-		return User{}, errors.New("query fail")
-	} else {
-		log.Println("查询成功")
-	}
-	fsi := new(FollowServiceImpl)
-	impl := UserServiceImpl{fsi}
-	followCount, _ := impl.FollowService.GetFollowingCnt(id)
-	followerCount, _ := impl.FollowService.GetFollowerCnt(id)
 	user := User{
+		Id:            0,
+		Name:          "",
+		FollowCount:   0,
+		FollowerCount: 0,
+		IsFollow:      false,
+	}
+	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+		log.Println("User Not Found")
+		return user, err
+	}
+	log.Println("Query User Success")
+	followCount, _ := usi.GetFollowingCnt(id)
+	followerCount, _ := usi.GetFollowerCnt(id)
+	user = User{
 		Id:            id,
 		Name:          tableUser.Name,
 		FollowCount:   followCount,
@@ -100,22 +91,24 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 
 // GetUserByIdWithCurId 已登录(curID)情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, error) {
-	tableUser := TableUser{}
-	if err := dao.Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
-		log.Println(err.Error())
-	}
-	if tableUser.Id != id {
-		log.Println("未找到该用户")
-		return User{}, errors.New("query fail")
-	} else {
-		log.Println("查询成功")
-	}
-	fsi := new(FollowServiceImpl)
-	impl := UserServiceImpl{fsi}
-	followCount, _ := impl.FollowService.GetFollowingCnt(id)
-	followerCount, _ := impl.FollowService.GetFollowerCnt(id)
-	isfollow, _ := impl.FollowService.IsFollowing(curId, id)
 	user := User{
+		Id:            0,
+		Name:          "",
+		FollowCount:   0,
+		FollowerCount: 0,
+		IsFollow:      false,
+	}
+	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+		log.Println("User Not Found")
+		return user, err
+	}
+	log.Println("Query User Success")
+	followCount, _ := usi.GetFollowingCnt(id)
+	followerCount, _ := usi.GetFollowerCnt(id)
+	isfollow, _ := usi.IsFollowing(curId, id)
+	user = User{
 		Id:            id,
 		Name:          tableUser.Name,
 		FollowCount:   followCount,
@@ -135,7 +128,7 @@ func GenerateToken(username string) string {
 }
 
 // NewToken 根据信息创建token
-func NewToken(u TableUser) string {
+func NewToken(u dao.TableUser) string {
 	expiresTime := time.Now().Unix() + int64(config.OneDayOfHours)
 	fmt.Printf("%v\n", expiresTime)
 	id64 := u.Id

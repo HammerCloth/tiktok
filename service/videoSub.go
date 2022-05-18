@@ -1,24 +1,26 @@
 package service
 
+import "TikTok/dao"
+
 type VideoSub struct {
 }
 
-func (vs VideoSub) GetTableUserList() []TableUser {
+func (vs VideoSub) GetTableUserList() []dao.TableUser {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vs VideoSub) GetTableUserByUsername(name string) TableUser {
+func (vs VideoSub) GetTableUserByUsername(name string) dao.TableUser {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vs VideoSub) GetTableUserById(id int64) TableUser {
+func (vs VideoSub) GetTableUserById(id int64) dao.TableUser {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (vs VideoSub) InsertTableUser(tableUser *TableUser) bool {
+func (vs VideoSub) InsertTableUser(tableUser *dao.TableUser) bool {
 	//TODO implement me
 	panic("implement me")
 }

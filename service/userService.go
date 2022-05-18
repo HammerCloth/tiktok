@@ -1,20 +1,22 @@
 package service
 
+import "TikTok/dao"
+
 type UserService interface {
 	/*
 		个人使用
 	*/
 	// GetTableUserList 获得全部TableUser对象
-	GetTableUserList() []TableUser
+	GetTableUserList() []dao.TableUser
 
 	// GetTableUserByUsername 根据username获得TableUser对象
-	GetTableUserByUsername(name string) TableUser
+	GetTableUserByUsername(name string) dao.TableUser
 
 	// GetTableUserById 根据user_id获得TableUser对象
-	GetTableUserById(id int64) TableUser
+	GetTableUserById(id int64) dao.TableUser
 
 	// InsertTableUser 将tableUser插入表内
-	InsertTableUser(tableUser *TableUser) bool
+	InsertTableUser(tableUser *dao.TableUser) bool
 	/*
 		他人使用
 	*/
@@ -39,8 +41,8 @@ type User struct {
 }
 
 // TableUser users表对应的结构体
-type TableUser struct {
-	Id       int64
-	Name     string
-	Password string
-}
+//type TableUser struct {
+//	Id       int64
+//	Name     string
+//	Password string
+//}

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"TikTok/dao"
 	"TikTok/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -36,7 +37,7 @@ func Register(c *gin.Context) {
 			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
 		})
 	} else {
-		newUser := service.TableUser{
+		newUser := dao.TableUser{
 			Name:     username,
 			Password: service.EnCoder(password),
 		}
@@ -82,7 +83,9 @@ func UserInfo(c *gin.Context) {
 	user_id := c.Query("user_id")
 	id, _ := strconv.ParseInt(user_id, 10, 64)
 
-	if u, err := service.UserService.GetUserById(new(service.UserServiceImpl), id); err != nil {
+	usi := service.UserServiceImpl{}
+
+	if u, err := usi.GetUserById(id); err != nil {
 		c.JSON(http.StatusOK, UserResponse{
 			Response: Response{StatusCode: 1, StatusMsg: "User Doesn't Exist"},
 		})
