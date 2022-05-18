@@ -3,6 +3,7 @@ package dao
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestInit(t *testing.T) {
@@ -38,4 +39,14 @@ func TestGetVideoByVideoId(t *testing.T) {
 	}
 	fmt.Println(data)
 
+}
+
+func TestGetVideosByLastTime(t *testing.T) {
+	data, err := GetVideosByLastTime(time.Now())
+	if err != nil {
+		return
+	}
+	for _, video := range data {
+		fmt.Println(video)
+	}
 }

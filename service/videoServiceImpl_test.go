@@ -3,11 +3,20 @@ package service
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
-func TestList(t *testing.T) {
+func getVideoService() VideoService {
 	var videoService VideoServiceImpl
-	list, err := videoService.List(2)
+	videoService.UserService = VideoSub{}
+	videoService.LikeService = VideoSub{}
+	videoService.CommentService = VideoSub{}
+	return &videoService
+}
+
+func TestList(t *testing.T) {
+	videoService := getVideoService()
+	list, err := videoService.List(1)
 	if err != nil {
 		return
 	}
@@ -18,12 +27,22 @@ func TestList(t *testing.T) {
 }
 
 func TestGetVideo(t *testing.T) {
-	var videoService VideoServiceImpl
-	videoService.UserService = VideoSub{}
+	videoService := getVideoService()
 	video, err := videoService.GetVideo(1, 1)
 	if err != nil {
 		return
 	}
 	fmt.Println(video)
+}
 
+func TestFeed(t *testing.T) {
+	videoService := getVideoService()
+	feed, t2, err := videoService.Feed(time.Now(), 1)
+	if err != nil {
+		return
+	}
+	for _, video := range feed {
+		fmt.Println(video)
+	}
+	fmt.Println(t2)
 }
