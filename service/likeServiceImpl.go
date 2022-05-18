@@ -80,8 +80,8 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64) ([]Video, error) {
 	//如果查询到数据，遍历video_id,将每个video对象添加到集合中去；
 	//likesub := new(LikeSub)
 	for video_id := range video_ids {
-		//video, err1 := likesub.GetVideo(int64(video_id))
-		video, err1 := like.GetVideo(int64(video_id))
+		//video, err1 := likesub.GetVideo(int64(video_id),userId)
+		video, err1 := like.GetVideo(int64(video_id), userId)
 		if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,跳过
 			log.Panicln(errors.New("can't find this favourite video"))
 			continue
