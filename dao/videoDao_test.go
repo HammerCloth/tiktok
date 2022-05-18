@@ -2,6 +2,7 @@ package dao
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -48,5 +49,15 @@ func TestGetVideosByLastTime(t *testing.T) {
 	}
 	for _, video := range data {
 		fmt.Println(video)
+	}
+}
+func TestVideoFtp(t *testing.T) {
+	_, err := os.Open("/Users/siyixiong/GolandProjects/tiktok/config/vsftpd.conf")
+	if err != nil {
+		panic(err)
+	}
+	//err = VideoFtp(file, "test")
+	if err != nil {
+		return
 	}
 }

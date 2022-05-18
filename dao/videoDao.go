@@ -2,6 +2,8 @@ package dao
 
 import (
 	"TikTok/config"
+	"github.com/dutchcoders/goftp"
+	"os"
 	"time"
 )
 
@@ -59,4 +61,59 @@ func GetVideosByLastTime(lastTime time.Time) ([]TableVideo, error) {
 		return videos, result.Error
 	}
 	return videos, nil
+}
+
+// VideoFTP
+// 通过ftp将视频传入服务器
+func VideoFTP(file *os.File, videoName string) error {
+	//初始化ftp
+	ftp, err := initFTP()
+	if err != nil {
+		return err
+	}
+	//转到video相对路线下
+	err = ftp.Cwd("video")
+	if err != nil {
+		return err
+	}
+	if err := ftp.Stor(videoName+".mp4", file); err != nil {
+		return err
+	}
+	defer file.Close()
+	return nil
+}
+
+//初始化FTP
+func initFTP() (*goftp.FTP, error) {
+	//获取到ftp的链接
+	connect, err := goftp.Connect(config.ConConfig)
+	if err != nil {
+		return nil, err
+	}
+	//登录
+	err = connect.Login(config.FtpUser, config.FtpPsw)
+	if err != nil {
+		return nil, err
+	}
+	return connect, nil
+}
+
+// ImageFTP
+// 将图片传入FTP服务器中，但是这里要注意图片的格式随着名字一起给
+func ImageFTP(file *os.File, imageName string) error {
+	//初始化ftp
+	ftp, err := initFTP()
+	if err != nil {
+		return err
+	}
+	//转到video相对路线下
+	err = ftp.Cwd("images")
+	if err != nil {
+		return err
+	}
+	if err := ftp.Stor(imageName, file); err != nil {
+		return err
+	}
+	defer file.Close()
+	return nil
 }

@@ -10,3 +10,6 @@ var OneMonth = 60 * 60 * 24 * 30
 
 // VideoCount 每次获取视频流的数量
 const VideoCount = 10
+const ConConfig = "43.138.25.60:21"
+const FtpUser = "ftpuser"
+const FtpPsw = "424193726"
