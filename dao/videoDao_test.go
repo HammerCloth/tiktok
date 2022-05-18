@@ -30,3 +30,12 @@ func TestGetVideosByAuthorId(t *testing.T) {
 		fmt.Println(video)
 	}
 }
+
+func TestGetVideoByVideoId(t *testing.T) {
+	data, err := GetVideoByVideoId(1)
+	if err != nil {
+		print(err)
+	}
+	fmt.Println(data)
+
+}

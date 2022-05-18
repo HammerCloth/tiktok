@@ -16,3 +16,14 @@ func TestList(t *testing.T) {
 	}
 
 }
+
+func TestGetVideo(t *testing.T) {
+	var videoService VideoServiceImpl
+	videoService.UserService = VideoSub{}
+	video, err := videoService.GetVideo(1, 1)
+	if err != nil {
+		return
+	}
+	fmt.Println(video)
+
+}
