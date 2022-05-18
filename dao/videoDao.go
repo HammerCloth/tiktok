@@ -33,3 +33,17 @@ func GetVideosByAuthorId(authorId int64) ([]TableVideo, error) {
 	}
 	return data, nil
 }
+
+// GetVideoByVideoId
+// 依据VideoId来获得视频信息
+func GetVideoByVideoId(videoId int64) (TableVideo, error) {
+	var tableVideo TableVideo
+	tableVideo.ID = videoId
+	Init()
+	result := Db.First(&tableVideo)
+	if result.Error != nil {
+		return tableVideo, result.Error
+	}
+	return tableVideo, nil
+
+}
