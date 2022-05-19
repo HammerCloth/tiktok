@@ -33,7 +33,7 @@ func initRouter(r *gin.Engine) {
 	/*
 		关注模块
 	*/
-	apiRouter.POST("/douyin/relation/action/", middleware.Auth(), controller.RelationAction)
-	apiRouter.GET("/douyin/relation/follow/list/", middleware.Auth(), controller.GetFollowing)
-	apiRouter.GET("douyin/relation/follower/list", middleware.Auth(), controller.GetFollowers)
+	apiRouter.POST("/relation/action/", middleware.Auth(), controller.RelationAction)
+	apiRouter.GET("/relation/follow/list/", middleware.Auth(), controller.GetFollowing)
+	apiRouter.GET("/relation/follower/list", middleware.Auth(), controller.GetFollowers)
 }

@@ -13,7 +13,7 @@ type FollowServiceImp struct {
 
 var (
 	followServiceImp  *FollowServiceImp //controller层通过该实例变量调用service的所有业务方法。
-	followServiceOnce *sync.Once        //限定该service对象为单例，节约内存。
+	followServiceOnce sync.Once         //限定该service对象为单例，节约内存。
 )
 
 // NewFSIInstance 生成并返回FollowServiceImp结构体单例变量。
@@ -21,7 +21,10 @@ func NewFSIInstance() *FollowServiceImp {
 	followServiceOnce.Do(
 		func() {
 			followServiceImp = &FollowServiceImp{
-				UserService: &UserServiceImpl{},
+				UserService: &UserServiceImpl{
+					// 存在我调userService中，userService又要调我。
+					FollowService: &FollowServiceImp{},
+				},
 			}
 		})
 	return followServiceImp
@@ -38,6 +41,28 @@ func (*FollowServiceImp) IsFollowing(userId int64, targetId int64) (bool, error)
 		return false, nil
 	}
 	return true, nil
+}
+
+// GetFollowerCnt 给定当前用户id，查询其粉丝数量。
+func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
+	cnt, err := dao.NewFollowDaoInstance().GetFollowerCnt(userId)
+
+	if nil != err {
+		return 0, err
+	}
+
+	return cnt, err
+}
+
+// GetFollowingCnt 给定当前用户id，查询其关注者数量。
+func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
+	cnt, err := dao.NewFollowDaoInstance().GetFollowingCnt(userId)
+
+	if nil != err {
+		return 0, err
+	}
+
+	return cnt, err
 }
 
 // AddFollowRelation 给定当前用户和目标对象id，添加他们之间的关注关系。

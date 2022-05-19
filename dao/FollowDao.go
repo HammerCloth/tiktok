@@ -16,7 +16,7 @@ type Follow struct {
 
 // TableName 设置Follow结构体对应数据库表名。
 func (Follow) TableName() string {
-	return "follow"
+	return "follows"
 }
 
 // FollowDao 把dao层看成整体，把dao的curd封装在一个结构体中。
@@ -104,7 +104,7 @@ func (*FollowDao) InsertFollowRelation(userId int64, targetId int64) (bool, erro
 		Cancel:     1,
 	}
 	// 插入失败，返回err.
-	if err := Db.Create(follow).Error; nil != err {
+	if err := Db.Select("UserId", "FollowerId", "Cancel").Create(&follow).Error; nil != err {
 		log.Println(err.Error())
 		return false, err
 	}
@@ -120,7 +120,7 @@ func (*FollowDao) FindEverFollowing(userId int64, targetId int64) (*Follow, erro
 	if err := Db.
 		Where("user_id = ?", userId).
 		Where("follower_id = ?", targetId).
-		Where("cancel = ?", 0).
+		Where("cancel = ? or cancel = ?", 0, 1).
 		Take(&follow).Error; nil != err {
 		// 当没查到记录报错时，不当做错误处理。
 		if gorm.IsRecordNotFoundError(err) {
@@ -139,7 +139,7 @@ func (*FollowDao) UpdateFollowRelation(userId int64, targetId int64, cancel int8
 	if err := Db.Model(Follow{}).
 		Where("user_id = ?", userId).
 		Where("follower_id = ?", targetId).
-		Update("cancel", 1).Error; nil != err {
+		Update("cancel", cancel).Error; nil != err {
 		// 更新失败，打印错误日志。
 		log.Println(err.Error())
 		return false, err
