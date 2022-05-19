@@ -3,7 +3,7 @@ package dao
 import (
 	"TikTok/config"
 	"github.com/dutchcoders/goftp"
-	"os"
+	"io"
 	"time"
 )
 
@@ -65,7 +65,7 @@ func GetVideosByLastTime(lastTime time.Time) ([]TableVideo, error) {
 
 // VideoFTP
 // 通过ftp将视频传入服务器
-func VideoFTP(file *os.File, videoName string) error {
+func VideoFTP(file io.Reader, videoName string) error {
 	//初始化ftp
 	ftp, err := initFTP()
 	if err != nil {
@@ -79,7 +79,6 @@ func VideoFTP(file *os.File, videoName string) error {
 	if err := ftp.Stor(videoName+".mp4", file); err != nil {
 		return err
 	}
-	defer file.Close()
 	return nil
 }
 
@@ -99,8 +98,8 @@ func initFTP() (*goftp.FTP, error) {
 }
 
 // ImageFTP
-// 将图片传入FTP服务器中，但是这里要注意图片的格式随着名字一起给
-func ImageFTP(file *os.File, imageName string) error {
+// 将图片传入FTP服务器中，但是这里要注意图片的格式随着名字一起给,同时调用时需要自己结束流
+func ImageFTP(file io.Reader, imageName string) error {
 	//初始化ftp
 	ftp, err := initFTP()
 	if err != nil {
@@ -114,6 +113,20 @@ func ImageFTP(file *os.File, imageName string) error {
 	if err := ftp.Stor(imageName, file); err != nil {
 		return err
 	}
-	defer file.Close()
+	return nil
+}
+
+// Save 保存视频记录
+func Save(videoName string, imageName string, authorId int64) error {
+	Init()
+	var video TableVideo
+	video.PublishTime = time.Now()
+	video.PlayUrl = config.PlayUrlPrefix + videoName + ".mp4"
+	video.CoverUrl = config.CoverUrlPrefix + imageName
+	video.AuthorId = authorId
+	result := Db.Save(&video)
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }

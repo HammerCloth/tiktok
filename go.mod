@@ -8,12 +8,14 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/jinzhu/copier v0.3.5
 	github.com/jinzhu/gorm v1.9.16
+	github.com/satori/go.uuid v1.2.0
 	github.com/swaggo/swag v1.8.1
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/giorgisio/goav v0.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/spec v0.20.6 // indirect

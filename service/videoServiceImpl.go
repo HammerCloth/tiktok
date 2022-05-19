@@ -3,8 +3,13 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
+	"bytes"
+	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/satori/go.uuid"
+	"log"
 	"mime/multipart"
+	"os/exec"
 	"time"
 )
 
@@ -74,9 +79,34 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 // Publish
 // 将传入的视频流保存在文件服务器中，并存储在mysql表中
 func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId int64) error {
-	//todo 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
-	//todo 将视频流上传到视频服务器，保存视频链接
-	//todo 组装并持久化
+	//将视频流上传到视频服务器，保存视频链接
+	file, err := data.Open()
+	if err != nil {
+		return err
+	}
+	//生成一个uuid作为视频的名字
+	videoName := uuid.NewV4().String()
+	err = dao.VideoFTP(file, videoName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	//在服务器上执行ffmpeg 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
+	imageName := uuid.NewV4().String() + ".jpg"
+	cmdArguments := []string{"-ss", "00:00:01", "-i", "/home/ftpuser/video/" + videoName + ".mp4", "-vframes", "1", "/home/ftpuser/images/" + imageName}
+	cmd := exec.Command("ffmpeg", cmdArguments...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("command output: %q", out.String())
+	//组装并持久化
+	err = dao.Save(videoName, imageName, userId)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
