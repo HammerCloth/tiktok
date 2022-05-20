@@ -144,7 +144,8 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 // GetFollowing 根据当前用户id来查询他的关注者列表。
 func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	users := make([]User, 1)
-	dao.Db.Raw("select id,`name`,"+
+	// 查询出错。
+	if err := dao.Db.Raw("select id,`name`,"+
 		"\ncount(if(tag = 'follower' and cancel is not null,1,null)) follower_count,"+
 		"\ncount(if(tag = 'follow' and cancel is not null,1,null)) follow_count,"+
 		"\n'true' isFollow\nfrom\n("+
@@ -154,7 +155,9 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 		"\n\tselect f1.follower_id fid,u.id,`name`,f2.cancel,'follow' tag"+
 		"\n\tfrom follows f1 join users u on f1.user_id = u.id and f1.cancel = 0"+
 		"\n\tleft join follows f2 on u.id = f2.follower_id and f2.cancel = 0\n) T"+
-		"\nwhere fid = ? group by fid,id,`name`", userId).Scan(&users)
+		"\nwhere fid = ? group by fid,id,`name`", userId).Scan(&users).Error; nil != err {
+		return nil, err
+	}
 	// 返回关注对象列表。
 	return users, nil
 }
@@ -191,7 +194,8 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 // GetFollowers 根据当前用户id来查询他的粉丝列表。
 func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 	users := make([]User, 1)
-	dao.Db.Raw("select T.id,T.name,T.follow_cnt follow_count,T.follower_cnt follower_count,if(f.cancel is null,'false','true') is_follow"+
+
+	if err := dao.Db.Raw("select T.id,T.name,T.follow_cnt follow_count,T.follower_cnt follower_count,if(f.cancel is null,'false','true') is_follow"+
 		"\nfrom follows f right join"+
 		"\n(\n\tselect fid,id,`name`,"+
 		"\n\tcount(if(tag = 'follower' and cancel is not null,1,null)) follower_cnt,"+
@@ -206,7 +210,10 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 		"\n\t\tleft join follows f2 on u.id = f2.follower_id and f2.cancel = 0"+
 		"\n\t\t) T\n\t\tgroup by fid,id,`name`"+
 		"\n) T on f.user_id = T.fid and f.follower_id = T.id and f.cancel = 0 where fid = ?", userId).
-		Scan(&users)
-
+		Scan(&users).Error; nil != err {
+		// 查询出错。
+		return nil, err
+	}
+	// 查询成功。
 	return users, nil
 }

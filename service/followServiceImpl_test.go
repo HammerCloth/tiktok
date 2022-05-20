@@ -6,7 +6,7 @@ import (
 )
 
 func TestIsFollow(t *testing.T) {
-	isFollow, err := newFSIInstance().IsFollowing(1, 2)
+	isFollow, err := NewFSIInstance().IsFollowing(1, 2)
 	if nil != err {
 		t.Errorf("IsFollow() error = %v", err)
 	}
