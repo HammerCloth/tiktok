@@ -26,8 +26,8 @@ type CommentService interface {
 
 //查看评论-传出的结构体-service
 type CommentInfo struct {
-	Id          int64 `json:"id,omitempty"`
-	UserInfo    User
+	Id          int64  `json:"id,omitempty"`
+	UserInfo    User   `json:"user,omitempty"`
 	Content     string `json:"content,omitempty"`
 	Create_date string `json:"create_date,omitempty"`
 }
