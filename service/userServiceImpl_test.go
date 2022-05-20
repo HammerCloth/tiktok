@@ -36,13 +36,17 @@ func TestInsertTableUser(t *testing.T) {
 }
 
 func TestGetUserById(t *testing.T) {
-	impl := UserServiceImpl{}
+	impl := UserServiceImpl{
+		FollowService: &FollowServiceImp{},
+	}
 	list, _ := impl.GetUserById(int64(4))
 	fmt.Printf("%v", list)
 }
 
 func TestGetUserByIdWithCurId(t *testing.T) {
-	impl := UserServiceImpl{}
-	list, _ := impl.GetUserByIdWithCurId(int64(4), int64(5))
+	impl := UserServiceImpl{
+		FollowService: &FollowServiceImp{},
+	}
+	list, _ := impl.GetUserByIdWithCurId(int64(482), int64(130))
 	fmt.Printf("%v", list)
 }

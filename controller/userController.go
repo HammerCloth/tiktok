@@ -83,7 +83,9 @@ func UserInfo(c *gin.Context) {
 	user_id := c.Query("user_id")
 	id, _ := strconv.ParseInt(user_id, 10, 64)
 
-	usi := service.UserServiceImpl{}
+	usi := service.UserServiceImpl{
+		FollowService: &service.FollowServiceImp{},
+	}
 
 	if u, err := usi.GetUserById(id); err != nil {
 		c.JSON(http.StatusOK, UserResponse{

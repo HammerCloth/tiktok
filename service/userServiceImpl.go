@@ -78,7 +78,13 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	}
 	log.Println("Query User Success")
 	followCount, _ := usi.GetFollowingCnt(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+	}
 	followerCount, _ := usi.GetFollowerCnt(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+	}
 	user = User{
 		Id:            id,
 		Name:          tableUser.Name,
@@ -105,9 +111,18 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 		return user, err
 	}
 	log.Println("Query User Success")
-	followCount, _ := usi.GetFollowingCnt(id)
-	followerCount, _ := usi.GetFollowerCnt(id)
-	isfollow, _ := usi.IsFollowing(curId, id)
+	followCount, err := usi.GetFollowingCnt(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+	}
+	followerCount, err := usi.GetFollowerCnt(id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+	}
+	isfollow, err := usi.IsFollowing(curId, id)
+	if err != nil {
+		log.Println("Err:", err.Error())
+	}
 	user = User{
 		Id:            id,
 		Name:          tableUser.Name,

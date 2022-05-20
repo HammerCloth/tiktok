@@ -17,14 +17,16 @@ func (tableUser TableUser) TableName() string {
 	return "users"
 }
 
+// UserDao 把user的dao封装在内
 type UserDao struct {
 }
 
 var (
-	userDao  *UserDao
-	userOnce sync.Once
+	userDao  *UserDao  //操作userDao来进行crud
+	userOnce sync.Once //单例模式
 )
 
+// NewUserDaoInstance 生成并返回userDao的单例对象
 func NewUserDaoInstance() *UserDao {
 	userOnce.Do(
 		func() {
@@ -33,6 +35,7 @@ func NewUserDaoInstance() *UserDao {
 	return userDao
 }
 
+// GetTableUserList 获取全部TableUser对象
 func (*UserDao) GetTableUserList() ([]TableUser, error) {
 	tableUsers := []TableUser{}
 	Init()
