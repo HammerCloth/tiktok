@@ -50,16 +50,15 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		commentInfo.Id = comment.Id
 		commentInfo.Content = comment.Comment_text
 		commentInfo.Create_date = comment.Create_date
-		//TODO:返回的评论中添加用户信息
 		//2.根据查询到的评论用户id和当前用户id，查询评论用户信息
-		/*commentInfo.UserInfo, err = c.GetUserByIdWithCurId(comment.User_id, userId)
-		log.Println(len(commentList))
-		log.Println(comment.User_id)
+		impl := UserServiceImpl{
+			FollowService: &FollowServiceImp{},
+		}
+		commentInfo.UserInfo, err = impl.GetUserByIdWithCurId(comment.User_id, userId)
 		if err != nil {
 			return nil, err
-		}*/
+		}
 		//3.组装list
-		log.Println(userId)
 		commentInfoList = append(commentInfoList, commentInfo)
 	}
 	return commentInfoList, nil
