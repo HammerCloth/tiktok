@@ -11,7 +11,7 @@ func (vs VideoSub) CountFromVideoId(id int64) (int64, error) {
 	return 4, nil
 }
 
-func (vs VideoSub) Send(comment *Comment) error {
+func (vs VideoSub) Send(comment *dao.Comment) error {
 	//TODO implement me
 	panic("implement me")
 }

@@ -36,4 +36,12 @@ func initRouter(r *gin.Engine) {
 	apiRouter.POST("/relation/action/", middleware.Auth(), controller.RelationAction)
 	apiRouter.GET("/relation/follow/list/", middleware.Auth(), controller.GetFollowing)
 	apiRouter.GET("/relation/follower/list", middleware.Auth(), controller.GetFollowers)
+
+	/*
+		评论模块
+	*/
+	//发表评论
+	apiRouter.POST("/douyin/comment/action/", middleware.Auth(), controller.Comment_Action)
+	//查看评论列表
+	apiRouter.GET("/douyin/comment/list/", middleware.Auth(), controller.Comment_List)
 }
