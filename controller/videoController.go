@@ -37,10 +37,10 @@ func GetVideo() service.VideoServiceImpl {
 }
 
 func Feed(c *gin.Context) {
-	last_time, _ := strconv.ParseInt(c.Query("latest_time"), 10, 64)
-	lastTime := time.Unix(last_time, 0)
+	me, _ := strconv.ParseInt(c.Query("latest_time"), 10, 64)
+	lastTime := time.Unix(me, 0)
 	log.Printf("获取到时间戳%v", lastTime)
-	userId, _ := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	userId, _ := strconv.ParseInt(c.Query("userId"), 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
 	videoService := GetVideo()
 	feed, nextTime, err := videoService.Feed(lastTime, userId)
@@ -91,7 +91,7 @@ func Publish(c *gin.Context) {
 
 // PublishList apiRouter.GET("/publish/list/", controller.PublishList)
 func PublishList(c *gin.Context) {
-	userId, _ := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	userId, _ := strconv.ParseInt(c.Query("userId"), 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
 	videoService := GetVideo()
 	list, err := videoService.List(userId)
