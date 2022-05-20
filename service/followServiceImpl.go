@@ -50,7 +50,6 @@ func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
 	if nil != err {
 		return 0, err
 	}
-
 	return cnt, err
 }
 
@@ -75,7 +74,7 @@ func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, 
 	}
 	// 曾经关注过，只需要update一下cancel即可。
 	if nil != follow {
-		_, err := followDao.UpdateFollowRelation(userId, targetId, 1)
+		_, err := followDao.UpdateFollowRelation(userId, targetId, 0)
 		// update 出错。
 		if nil != err {
 			return false, err
@@ -103,7 +102,7 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 	}
 	// 曾经关注过，只需要update一下cancel即可。
 	if nil != follow {
-		_, err := followDao.UpdateFollowRelation(userId, targetId, 0)
+		_, err := followDao.UpdateFollowRelation(userId, targetId, 1)
 		// update 出错。
 		if nil != err {
 			return false, err
@@ -116,7 +115,7 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 }
 
 // GetFollowing 根据当前用户id来查询他的关注者列表。
-func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
+/*func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	// 获取关注对象的id数组。
 	ids, err := dao.NewFollowDaoInstance().GetFollowingIds(userId)
 	// 查询出错
@@ -141,10 +140,28 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	}
 	// 返回关注对象列表。
 	return users, nil
+}*/
+// GetFollowing 根据当前用户id来查询他的关注者列表。
+func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
+	users := make([]User, 1)
+	dao.Db.Raw("select id,`name`,"+
+		"\ncount(if(tag = 'follower' and cancel is not null,1,null)) follower_count,"+
+		"\ncount(if(tag = 'follow' and cancel is not null,1,null)) follow_count,"+
+		"\n'true' isFollow\nfrom\n("+
+		"\n\tselect f1.follower_id fid,u.id,`name`,f2.cancel,'follower' tag"+
+		"\n\tfrom follows f1 join users u on f1.user_id = u.id and f1.cancel = 0"+
+		"\n\tleft join follows f2 on u.id = f2.user_id and f2.cancel = 0\n\tunion all"+
+		"\n\tselect f1.follower_id fid,u.id,`name`,f2.cancel,'follow' tag"+
+		"\n\tfrom follows f1 join users u on f1.user_id = u.id and f1.cancel = 0"+
+		"\n\tleft join follows f2 on u.id = f2.follower_id and f2.cancel = 0\n) T"+
+		"\nwhere fid = ? group by fid,id,`name`", userId).Scan(&users)
+	// 返回关注对象列表。
+	return users, nil
 }
 
 // GetFollowers 根据当前用户id来查询他的粉丝列表。
-func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
+
+/*func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 	// 获取粉丝的id数组。
 	ids, err := dao.NewFollowDaoInstance().GetFollowersIds(userId)
 	// 查询出错
@@ -168,5 +185,28 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 		users[i] = user
 	}
 	// 返回粉丝列表。
+	return users, nil
+}*/
+
+// GetFollowers 根据当前用户id来查询他的粉丝列表。
+func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
+	users := make([]User, 1)
+	dao.Db.Raw("select T.id,T.name,T.follow_cnt follow_count,T.follower_cnt follower_count,if(f.cancel is null,'false','true') is_follow"+
+		"\nfrom follows f right join"+
+		"\n(\n\tselect fid,id,`name`,"+
+		"\n\tcount(if(tag = 'follower' and cancel is not null,1,null)) follower_cnt,"+
+		"\n\tcount(if(tag = 'follow' and cancel is not null,1,null)) follow_cnt"+
+		"\n\tfrom\n\t\t("+
+		"\n\t\tselect f1.user_id fid,u.id,`name`,f2.cancel,'follower' tag"+
+		"\n\t\tfrom follows f1 join users u on f1.follower_id = u.id and f1.cancel = 0"+
+		"\n\t\tleft join follows f2 on u.id = f2.user_id and f2.cancel = 0"+
+		"\n\t\tunion all"+
+		"\n\t\tselect f1.user_id fid,u.id,`name`,f2.cancel,'follow' tag"+
+		"\n\t\tfrom follows f1 join users u on f1.follower_id = u.id and f1.cancel = 0"+
+		"\n\t\tleft join follows f2 on u.id = f2.follower_id and f2.cancel = 0"+
+		"\n\t\t) T\n\t\tgroup by fid,id,`name`"+
+		"\n) T on f.user_id = T.fid and f.follower_id = T.id and f.cancel = 0 where fid = ?", userId).
+		Scan(&users)
+
 	return users, nil
 }

@@ -49,7 +49,7 @@ func (*FollowDao) FindRelation(userId int64, targetId int64) (*Follow, error) {
 	if err := Db.
 		Where("user_id = ?", userId).
 		Where("follower_id = ?", targetId).
-		Where("cancel = ?", 1).
+		Where("cancel = ?", 0).
 		Take(&follow).Error; nil != err {
 		// 当没查到数据时，gorm也会报错。
 		if gorm.IsRecordNotFoundError(err) {
@@ -70,7 +70,7 @@ func (*FollowDao) GetFollowerCnt(userId int64) (int64, error) {
 	if err := Db.
 		Model(Follow{}).
 		Where("user_id = ?", userId).
-		Where("cancel = ?", 1).
+		Where("cancel = ?", 0).
 		Count(&cnt).Error; nil != err {
 		log.Println(err.Error())
 		return 0, err
@@ -86,7 +86,7 @@ func (*FollowDao) GetFollowingCnt(userId int64) (int64, error) {
 	// 查询出错，日志打印err msg，并return err
 	if err := Db.Model(Follow{}).
 		Where("follower_id = ?", userId).
-		Where("cancel = ?", 1).
+		Where("cancel = ?", 0).
 		Count(&cnt).Error; nil != err {
 		log.Println(err.Error())
 		return 0, err
@@ -101,7 +101,7 @@ func (*FollowDao) InsertFollowRelation(userId int64, targetId int64) (bool, erro
 	follow := Follow{
 		UserId:     userId,
 		FollowerId: targetId,
-		Cancel:     1,
+		Cancel:     0,
 	}
 	// 插入失败，返回err.
 	if err := Db.Select("UserId", "FollowerId", "Cancel").Create(&follow).Error; nil != err {
@@ -173,6 +173,7 @@ func (*FollowDao) GetFollowersIds(userId int64) ([]int64, error) {
 	if err := Db.
 		Model(Follow{}).
 		Where("user_id = ?", userId).
+		Where("cancel = ?", 0).
 		Pluck("follower_id", &ids).Error; nil != err {
 		// 没有粉丝，但是不能算错。
 		if gorm.IsRecordNotFoundError(err) {

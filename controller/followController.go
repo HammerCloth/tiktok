@@ -115,7 +115,6 @@ func GetFollowers(c *gin.Context) {
 	// 正常获取粉丝列表
 	fsi := service.NewFSIInstance()
 	users, err := fsi.GetFollowers(userId)
-	fmt.Printf("%#v", users)
 	// 获取关注列表时出错。
 	if err != nil {
 		c.JSON(http.StatusOK, FollowersResp{
