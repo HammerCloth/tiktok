@@ -16,14 +16,14 @@ type RelationActionResp struct {
 // FollowingResp 获取关注列表需要返回的结构。
 type FollowingResp struct {
 	Response
-	Users []service.User `json:"users,omitempty"`
+	UserList []service.User `json:"user_list,omitempty"`
 }
 
 // FollowersResp 获取粉丝列表需要返回的结构。
 type FollowersResp struct {
 	Response
 	// 必须大写，才能序列化
-	Users []service.User `json:"users,omitempty"`
+	UserList []service.User `json:"user_list,omitempty"`
 }
 
 // RelationAction 处理关注和取消关注请求。
@@ -70,7 +70,7 @@ func GetFollowing(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "用户id格式错误。",
 			},
-			Users: nil,
+			UserList: nil,
 		})
 		return
 	}
@@ -84,13 +84,13 @@ func GetFollowing(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "获取关注列表时出错。",
 			},
-			Users: nil,
+			UserList: nil,
 		})
 		return
 	}
 	// 成功获取到关注列表。
 	c.JSON(http.StatusOK, FollowingResp{
-		Users: users,
+		UserList: users,
 		Response: Response{
 			StatusCode: 0,
 			StatusMsg:  "OK",
@@ -108,7 +108,7 @@ func GetFollowers(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "用户id格式错误。",
 			},
-			Users: nil,
+			UserList: nil,
 		})
 		return
 	}
@@ -122,7 +122,7 @@ func GetFollowers(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "获取粉丝列表时出错。",
 			},
-			Users: nil,
+			UserList: nil,
 		})
 		return
 	}
@@ -132,6 +132,6 @@ func GetFollowers(c *gin.Context) {
 			StatusCode: 0,
 			StatusMsg:  "OK",
 		},
-		Users: users,
+		UserList: users,
 	})
 }
