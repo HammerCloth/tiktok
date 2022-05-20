@@ -6,13 +6,13 @@ import (
 )
 
 type Video struct {
-	Id            int64 `copier:"ID"` //指定别名
-	Author        User  `copier:"-"`  //在拷贝时忽略
-	PlayUrl       string
-	CoverUrl      string
-	FavoriteCount int64
-	CommentCount  int64
-	IsFavorite    bool
+	Id            int64  `copier:"ID" json:"id,omitempty"` //指定别名
+	Author        User   `copier:"-" json:"author"`        //在拷贝时忽略
+	PlayUrl       string `json:"play_url,omitempty"`
+	CoverUrl      string `json:"cover_url,omitempty"`
+	FavoriteCount int64  `json:"favorite_count,omitempty"`
+	CommentCount  int64  `json:"comment_count,omitempty"`
+	IsFavorite    bool   `json:"is_favorite,omitempty"`
 }
 
 type VideoService interface {

@@ -9,12 +9,9 @@ import (
 func initRouter(r *gin.Engine) {
 	apiRouter := r.Group("/douyin")
 	// basic apis
-	//apiRouter.GET("/feed/", controller.Feed)
-	//apiRouter.GET("/user/", middleware.Auth(), controller.UserInfo)
-	//apiRouter.POST("/user/register/", controller.Register)
-	//apiRouter.POST("/user/login/", controller.Login)
-	//apiRouter.POST("/publish/action/", controller.Publish)
-	//apiRouter.GET("/publish/list/", controller.PublishList)
+	apiRouter.GET("/feed/", controller.Feed)
+	apiRouter.POST("/publish/action/", controller.Publish)
+	apiRouter.GET("/publish/list/", controller.PublishList)
 
 	apiRouter.GET("/user/", middleware.Auth(), controller.UserInfo)
 	apiRouter.POST("/user/register/", controller.Register)

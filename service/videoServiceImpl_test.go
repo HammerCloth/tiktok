@@ -14,9 +14,31 @@ func getVideoService() VideoService {
 	return &videoService
 }
 
+func getVideoService2() VideoService {
+	var userService UserServiceImpl
+	var followService FollowServiceImp
+	var videoService VideoServiceImpl
+	var likeService LikeServiceImpl
+	var commentService CommentServiceImpl
+
+	userService.FollowService = &followService
+
+	followService.UserService = &userService
+
+	likeService.VideoService = &videoService
+
+	commentService.UserService = &userService
+
+	videoService.CommentService = &commentService
+	videoService.LikeService = &likeService
+	videoService.UserService = &userService
+
+	return &videoService
+}
+
 func TestList(t *testing.T) {
-	videoService := getVideoService()
-	list, err := videoService.List(1)
+	videoService := getVideoService2()
+	list, err := videoService.List(999)
 	if err != nil {
 		return
 	}
@@ -27,8 +49,8 @@ func TestList(t *testing.T) {
 }
 
 func TestGetVideo(t *testing.T) {
-	videoService := getVideoService()
-	video, err := videoService.GetVideo(1, 1)
+	videoService := getVideoService2()
+	video, err := videoService.GetVideo(1, 2)
 	if err != nil {
 		return
 	}
@@ -36,8 +58,8 @@ func TestGetVideo(t *testing.T) {
 }
 
 func TestFeed(t *testing.T) {
-	videoService := getVideoService()
-	feed, t2, err := videoService.Feed(time.Now(), 1)
+	videoService := getVideoService2()
+	feed, t2, err := videoService.Feed(time.Now(), 2)
 	if err != nil {
 		return
 	}

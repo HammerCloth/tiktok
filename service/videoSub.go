@@ -7,13 +7,13 @@ import (
 type VideoSub struct {
 }
 
-func (vs VideoSub) CountFromVideoId(id int64) (int64, error) {
-	return 4, nil
-}
-
-func (vs VideoSub) Send(comment *dao.Comment) error {
+func (vs VideoSub) Send(comment dao.Comment) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (vs VideoSub) CountFromVideoId(id int64) (int64, error) {
+	return 4, nil
 }
 
 func (vs VideoSub) DelComment(id int64) error {
