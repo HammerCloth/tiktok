@@ -21,21 +21,22 @@ func Auth() gin.HandlerFunc {
 		if len(auth) == 0 {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{
-				StatusCode: 0,
+				StatusCode: -1,
 				StatusMsg:  "Unauthorized",
 			})
 		}
 		auth = strings.Fields(auth)[1]
 		token, err := parseToken(auth)
-		context.Set("userId", token.Id)
 		if err != nil {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{
-				StatusMsg: "Token Error",
+				StatusCode: -1,
+				StatusMsg:  "Token Error",
 			})
 		} else {
 			println("token 正确")
 		}
+		context.Set("userId", token.Id)
 		context.Next()
 	}
 }
