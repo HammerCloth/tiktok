@@ -21,7 +21,7 @@ func Auth() gin.HandlerFunc {
 		if len(auth) == 0 {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{
-				StatusCode: 0,
+				StatusCode: -1,
 				StatusMsg:  "Unauthorized",
 			})
 		}
