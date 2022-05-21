@@ -67,7 +67,6 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	video.Author, err = videoService.GetUserByIdWithCurId(data.AuthorId, userId)
 	if err != nil {
 		log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 失败：%v", err)
-		return video, err
 	}
 	log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 成功")
 
@@ -75,7 +74,6 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	likeCount, err := videoService.FavouriteCount(data.ID)
 	if err != nil {
 		log.Printf("方法videoService.FavouriteCount(data.ID) 失败：%v", err)
-		return video, err
 	}
 	log.Printf("方法videoService.FavouriteCount(data.ID) 成功")
 
@@ -84,7 +82,6 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	commentCount, err := videoService.CountFromVideoId(data.ID)
 	if err != nil {
 		log.Printf("方法videoService.CountFromVideoId(data.ID) 失败：%v", err)
-		return video, err
 	}
 	log.Printf("方法videoService.CountFromVideoId(data.ID) 成功")
 
@@ -178,8 +175,7 @@ func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.Ta
 		//获取对应的user
 		author, err := videoService.GetUserByIdWithCurId(temp.AuthorId, userId)
 		if err != nil {
-			log.Printf("videoService.GetUserByIdWithCurId(temp.AuthorId, userId) 失败：%v", err)
-			return err
+			log.Printf("videoService.GetUserByIdWithCurId(%v, %v) 失败：%v", temp.AuthorId, userId, err)
 		}
 		log.Println("videoService.GetUserByIdWithCurId(temp.AuthorId, userId) 成功")
 		video.Author = author
@@ -187,7 +183,6 @@ func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.Ta
 		likeCount, err := videoService.FavouriteCount(temp.ID)
 		if err != nil {
 			log.Printf("videoService.FavouriteCount(temp.ID) 失败：%v", err)
-			return err
 		}
 		log.Printf("videoService.FavouriteCount(temp.ID) 成功")
 		video.FavoriteCount = likeCount
@@ -195,7 +190,6 @@ func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.Ta
 		commentCount, err := videoService.CountFromVideoId(temp.ID)
 		if err != nil {
 			log.Printf("videoService.CountFromVideoId(temp.ID) 失败：%v", err)
-			return err
 		}
 		log.Printf("videoService.CountFromVideoId(temp.ID) 成功")
 		video.CommentCount = commentCount

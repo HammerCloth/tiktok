@@ -3,7 +3,7 @@ package service
 type LikeSub struct {
 }
 
-func (like *LikeSub) GetVideo(videoId int64) (Video, error) {
+func (like *LikeSub) GetVideo(videoId int64, userId int64) (Video, error) {
 	if videoId%2 == 1 {
 		return Video{
 			Id: 1,
