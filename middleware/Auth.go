@@ -30,7 +30,8 @@ func Auth() gin.HandlerFunc {
 		if err != nil {
 			context.Abort()
 			context.JSON(http.StatusUnauthorized, Response{
-				StatusMsg: "Token Error",
+				StatusCode: -1,
+				StatusMsg:  "Token Error",
 			})
 		} else {
 			println("token 正确")
