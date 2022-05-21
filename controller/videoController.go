@@ -11,8 +11,8 @@ import (
 
 type FeedResponse struct {
 	Response
-	VideoList []service.Video `json:"video_list,omitempty"`
-	NextTime  int64           `json:"next_time,omitempty"`
+	VideoList []service.Video `json:"video_list"`
+	NextTime  int64           `json:"next_time"`
 }
 
 type VideoListResponse struct {
@@ -91,7 +91,8 @@ func Publish(c *gin.Context) {
 
 // PublishList apiRouter.GET("/publish/list/", controller.PublishList)
 func PublishList(c *gin.Context) {
-	userId, _ := strconv.ParseInt(c.GetString("userId"), 10, 64)
+	user_Id, _ := c.GetQuery("user_id")
+	userId, _ := strconv.ParseInt(user_Id, 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
 	videoService := GetVideo()
 	list, err := videoService.List(userId)

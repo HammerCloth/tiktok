@@ -21,8 +21,9 @@ type VideoServiceImpl struct {
 
 // Feed
 // 通过传入时间戳，当前用户的id，返回对应的视频数组，以及视频数组中最早的发布时间
+// 获取视频数组大小是可以控制的，在config中的videoCount变量
 func (videoService VideoServiceImpl) Feed(lastTime time.Time, userId int64) ([]Video, time.Time, error) {
-	//创建对应返回视频的切片数组
+	//创建对应返回视频的切片数组，提前将切片的容量设置好，可以减少切片扩容的性能
 	videos := make([]Video, 0, config.VideoCount)
 	//根据传入的时间，获得传入时间前n个视频，可以通过config.videoCount来控制
 	tableVideos, err := dao.GetVideosByLastTime(lastTime)
@@ -31,7 +32,7 @@ func (videoService VideoServiceImpl) Feed(lastTime time.Time, userId int64) ([]V
 		return nil, time.Time{}, err
 	}
 	log.Printf("方法dao.GetVideosByLastTime(lastTime) 成功：%v", tableVideos)
-	//将数据通过copyVideos进行处理
+	//将数据通过copyVideos进行处理，在拷贝的过程中对数据进行组装
 	err = videoService.copyVideos(&videos, &tableVideos, userId)
 	if err != nil {
 		log.Printf("方法videoService.copyVideos(&videos, &tableVideos, userId) 失败：%v", err)
@@ -43,57 +44,63 @@ func (videoService VideoServiceImpl) Feed(lastTime time.Time, userId int64) ([]V
 }
 
 // GetVideo
-// 传入视频id获得对应的视频对象，注意还需要传入当前的用户id
+// 传入视频id获得对应的视频对象，注意还需要传入当前登录用户id
 func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Video, error) {
+
 	//初始化video对象
 	var video Video
-	//从数据库中查询数据
+
+	//从数据库中查询数据，如果查询不到数据，就直接失败返回，后续流程就不需要执行了
 	data, err := dao.GetVideoByVideoId(videoId)
 	if err != nil {
 		log.Printf("方法dao.GetVideoByVideoId(videoId) 失败：%v", err)
 		return video, err
+	} else {
+		log.Printf("方法dao.GetVideoByVideoId(videoId) 成功")
 	}
-	log.Printf("方法dao.GetVideoByVideoId(videoId) 成功")
 
-	//将同名字段进行拷贝
+	//将同名字段进行拷贝，如果拷贝失败，说明内部逻辑出现问题，导致的拷贝失败，直接返回一个空的数组，同时返回错误
 	err = copier.Copy(&video, &data)
 	if err != nil {
 		log.Printf("方法copier.Copy(&video, &data) 失败：%v", err)
 		return Video{}, err
+	} else {
+		log.Printf("方法copier.Copy(&video, &data) 成功")
 	}
-	log.Printf("方法copier.Copy(&video, &data) 成功")
 
-	//插入Author
+	//插入Author，这里需要将视频的发布者和当前登录的用户传入，才能正确获得isFollow，
+	//如果出现错误，不能直接返回失败，将默认值返回，保证稳定
 	video.Author, err = videoService.GetUserByIdWithCurId(data.AuthorId, userId)
 	if err != nil {
 		log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 失败：%v", err)
+	} else {
+		log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 成功")
 	}
-	log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 成功")
 
-	//插入点赞数量
-	likeCount, err := videoService.FavouriteCount(data.ID)
+	//插入点赞数量，同上所示，不将nil直接向上返回，数据没有就算了，给一个默认就行了
+	video.FavoriteCount, err = videoService.FavouriteCount(data.ID)
 	if err != nil {
 		log.Printf("方法videoService.FavouriteCount(data.ID) 失败：%v", err)
+	} else {
+		log.Printf("方法videoService.FavouriteCount(data.ID) 成功")
 	}
-	log.Printf("方法videoService.FavouriteCount(data.ID) 成功")
 
-	video.FavoriteCount = likeCount
 	//获取该视屏的评论数字
-	commentCount, err := videoService.CountFromVideoId(data.ID)
+	video.CommentCount, err = videoService.CountFromVideoId(data.ID)
 	if err != nil {
 		log.Printf("方法videoService.CountFromVideoId(data.ID) 失败：%v", err)
+	} else {
+		log.Printf("方法videoService.CountFromVideoId(data.ID) 成功")
 	}
-	log.Printf("方法videoService.CountFromVideoId(data.ID) 成功")
 
-	video.CommentCount = commentCount
 	//获取当前用户是否点赞了该视频
-	isFavourit, err := videoService.IsFavourit(video.Id, userId)
+	video.IsFavorite, err = videoService.IsFavourit(video.Id, userId)
 	if err != nil {
 		log.Printf("方法videoService.IsFavourit(video.Id, userId) 失败：%v", err)
 	} else {
 		log.Printf("方法videoService.IsFavourit(video.Id, userId) 成功")
 	}
-	video.IsFavorite = isFavourit
+
 	return video, nil
 }
 
