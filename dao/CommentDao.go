@@ -45,7 +45,7 @@ func (*CommentDao) Count(video_id int64) (int64, error) {
 	var count int64
 	err := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": video_id, "cancel": config.ValidComment}).Count(&count).Error
 	if err != nil {
-		return -1, errors.New("find commentsCount failed")
+		return -1, errors.New("find comments count failed")
 	}
 	return count, nil
 }
@@ -71,7 +71,7 @@ func (*CommentDao) DeleteComment(id int64) error {
 	}
 	err := Db.Model(Comment{}).Where("id = ?", id).Update("cancel", config.InvalidComment).Error
 	if err != nil {
-		return errors.New("del Comment failed")
+		return errors.New("del comment failed")
 	}
 	return nil
 }
@@ -81,8 +81,7 @@ func (*CommentDao) GetCommentList(videoId int64) ([]Comment, error) {
 	Init()
 	var commentList []Comment
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).Find(&commentList)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		log.Println(result.Error.Error())
+	if result.RowsAffected == 0 {
 		return commentList, errors.New("there are no comments")
 	}
 	if result.Error != nil {
