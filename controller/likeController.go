@@ -44,7 +44,7 @@ func Favorite_Action(c *gin.Context) {
 func GetFavouriteList(c *gin.Context) {
 	user_id := c.Query("user_id")
 	userid, _ := strconv.ParseInt(user_id, 10, 64)
-	like := new(service.LikeServiceImpl)
+	like := GetVideo()
 	videos, err := like.GetFavouriteList(userid)
 	if err == nil {
 		c.JSON(http.StatusOK, GetFavouriteListResponse{
