@@ -37,5 +37,5 @@ type User struct {
 	Name          string `json:"name,omitempty"`
 	FollowCount   int64  `json:"follow_count"`
 	FollowerCount int64  `json:"follower_count"`
-	IsFollow      bool   `json:"is_follow,omitempty"`
+	IsFollow      bool   `json:"is_follow"`
 }
