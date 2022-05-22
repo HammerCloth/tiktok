@@ -28,7 +28,7 @@ func GetVideosByAuthorId(authorId int64) ([]TableVideo, error) {
 	//建立结果集接收
 	var data []TableVideo
 	//初始化db
-	Init()
+	//Init()
 	result := Db.Where(&TableVideo{AuthorId: authorId}).Find(&data)
 	//如果出现问题，返回对应到空，并且返回error
 	if result.Error != nil {
@@ -42,7 +42,7 @@ func GetVideosByAuthorId(authorId int64) ([]TableVideo, error) {
 func GetVideoByVideoId(videoId int64) (TableVideo, error) {
 	var tableVideo TableVideo
 	tableVideo.ID = videoId
-	Init()
+	//Init()
 	result := Db.First(&tableVideo)
 	if result.Error != nil {
 		return tableVideo, result.Error
@@ -55,7 +55,7 @@ func GetVideoByVideoId(videoId int64) (TableVideo, error) {
 // 依据一个时间，来获取这个时间之前的一些视频
 func GetVideosByLastTime(lastTime time.Time) ([]TableVideo, error) {
 	videos := make([]TableVideo, config.VideoCount)
-	Init()
+	//Init()
 	result := Db.Where("publish_time<?", lastTime).Order("publish_time desc").Limit(config.VideoCount).Find(&videos)
 	if result.Error != nil {
 		return videos, result.Error
@@ -118,7 +118,7 @@ func ImageFTP(file io.Reader, imageName string) error {
 
 // Save 保存视频记录
 func Save(videoName string, imageName string, authorId int64) error {
-	Init()
+	//Init()
 	var video TableVideo
 	video.PublishTime = time.Now()
 	video.PlayUrl = config.PlayUrlPrefix + videoName + ".mp4"
