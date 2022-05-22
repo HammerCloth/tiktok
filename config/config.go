@@ -9,7 +9,7 @@ var OneMinute = 60 * 1
 var OneMonth = 60 * 60 * 24 * 30
 
 // VideoCount 每次获取视频流的数量
-const VideoCount = 10
+const VideoCount = 5
 
 // ConConfig ftp服务器地址
 const ConConfig = "43.138.25.60:21"
