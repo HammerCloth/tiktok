@@ -4,6 +4,7 @@ import (
 	"TikTok/dao"
 	"TikTok/service"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -44,7 +45,9 @@ func Register(c *gin.Context) {
 		if usi.InsertTableUser(&newUser) != true {
 			println("Insert Data Fail")
 		}
+		u := usi.GetTableUserByUsername(username)
 		token := service.GenerateToken(username)
+		log.Println("注册返回的id: ", u.Id)
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: Response{StatusCode: 0},
 			UserId:   u.Id,
