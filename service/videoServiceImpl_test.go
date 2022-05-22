@@ -6,39 +6,25 @@ import (
 	"time"
 )
 
-func getVideoService() VideoService {
-	var videoService VideoServiceImpl
-	videoService.UserService = VideoSub{}
-	videoService.LikeService = VideoSub{}
-	videoService.CommentService = VideoSub{}
-	return &videoService
-}
-
 func getVideoService2() VideoService {
 	var userService UserServiceImpl
 	var followService FollowServiceImp
 	var videoService VideoServiceImpl
 	var likeService LikeServiceImpl
 	var commentService CommentServiceImpl
-
 	userService.FollowService = &followService
-
 	followService.UserService = &userService
-
 	likeService.VideoService = &videoService
-
 	commentService.UserService = &userService
-
 	videoService.CommentService = &commentService
 	videoService.LikeService = &likeService
 	videoService.UserService = &userService
-
 	return &videoService
 }
 
 func TestList(t *testing.T) {
 	videoService := getVideoService2()
-	list, err := videoService.List(999)
+	list, err := videoService.List(3)
 	if err != nil {
 		return
 	}

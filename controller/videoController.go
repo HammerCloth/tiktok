@@ -38,7 +38,7 @@ func GetVideo() service.VideoServiceImpl {
 
 func Feed(c *gin.Context) {
 	me, _ := strconv.ParseInt(c.Query("latest_time"), 10, 64)
-	lastTime := time.Unix(me, 0)
+	lastTime := time.UnixMilli(me)
 	log.Printf("获取到时间戳%v", lastTime)
 	userId, _ := strconv.ParseInt(c.GetString("userId"), 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
