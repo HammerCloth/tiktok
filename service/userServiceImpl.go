@@ -145,9 +145,9 @@ func GenerateToken(username string) string {
 // NewToken 根据信息创建token
 func NewToken(u dao.TableUser) string {
 	expiresTime := time.Now().Unix() + int64(config.OneDayOfHours)
-	fmt.Printf("%v\n", expiresTime)
+	fmt.Printf("expiresTime: %v\n", expiresTime)
 	id64 := u.Id
-	fmt.Printf("newtoken: %v\n", strconv.FormatInt(id64, 10))
+	fmt.Printf("id: %v\n", strconv.FormatInt(id64, 10))
 	claims := jwt.StandardClaims{
 		Audience:  u.Name,
 		ExpiresAt: expiresTime,
