@@ -3,7 +3,6 @@ package dao
 import (
 	"TikTok/config"
 	"errors"
-	"github.com/jinzhu/gorm"
 	"log"
 	"sync"
 )
@@ -41,7 +40,7 @@ func NewCommentDaoInstance() *CommentDao {
 
 //1、使用video id 查询Comment数量
 func (*CommentDao) Count(video_id int64) (int64, error) {
-	Init()
+	//Init()
 	var count int64
 	err := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": video_id, "cancel": config.ValidComment}).Count(&count).Error
 	if err != nil {
@@ -52,7 +51,7 @@ func (*CommentDao) Count(video_id int64) (int64, error) {
 
 //2、发表评论
 func (*CommentDao) InsertComment(comment Comment) error {
-	Init()
+	//Init()
 	err := Db.Model(Comment{}).Create(&comment).Error
 	if err != nil {
 		return errors.New("create comment failed")
@@ -62,11 +61,11 @@ func (*CommentDao) InsertComment(comment Comment) error {
 
 //3、删除评论，传入评论id
 func (*CommentDao) DeleteComment(id int64) error {
-	Init()
+	//Init()
 	var commentInfo Comment
 	//先查询是否有此评论（正常肯定是有的吧）
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"id": id, "cancel": config.ValidComment}).First(&commentInfo)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if result.RowsAffected == 0 {
 		return errors.New("del comment is not exist")
 	}
 	err := Db.Model(Comment{}).Where("id = ?", id).Update("cancel", config.InvalidComment).Error
@@ -78,7 +77,7 @@ func (*CommentDao) DeleteComment(id int64) error {
 
 //4.根据视频id查询所属评论全部列表信息
 func (*CommentDao) GetCommentList(videoId int64) ([]Comment, error) {
-	Init()
+	//Init()
 	var commentList []Comment
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).Find(&commentList)
 	if result.RowsAffected == 0 {
