@@ -20,22 +20,7 @@ type VideoListResponse struct {
 	VideoList []service.Video `json:"video_list"`
 }
 
-func GetVideo() service.VideoServiceImpl {
-	var userService service.UserServiceImpl
-	var followService service.FollowServiceImp
-	var videoService service.VideoServiceImpl
-	var likeService service.LikeServiceImpl
-	var commentService service.CommentServiceImpl
-	userService.FollowService = &followService
-	followService.UserService = &userService
-	likeService.VideoService = &videoService
-	commentService.UserService = &userService
-	videoService.CommentService = &commentService
-	videoService.LikeService = &likeService
-	videoService.UserService = &userService
-	return videoService
-}
-
+// Feed /feed/
 func Feed(c *gin.Context) {
 	me, _ := strconv.ParseInt(c.Query("latest_time"), 10, 64)
 	lastTime := time.UnixMilli(me)
@@ -59,10 +44,11 @@ func Feed(c *gin.Context) {
 	})
 }
 
-// Publish apiRouter.POST("/publish/action/", controller.Publish)
+// Publish /publish/action/
 func Publish(c *gin.Context) {
 	data, err := c.FormFile("data")
 	userId, _ := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	title := c.Query("title")
 	log.Printf("获取到用户id:%v\n", userId)
 	if err != nil {
 		log.Printf("获取视频流失败:%v", err)
@@ -73,7 +59,7 @@ func Publish(c *gin.Context) {
 		return
 	}
 	videoService := GetVideo()
-	err = videoService.Publish(data, userId)
+	err = videoService.Publish(data, userId, title)
 	if err != nil {
 		log.Printf("方法videoService.Publish(data, userId) 失败：%v", err)
 		c.JSON(http.StatusOK, Response{
@@ -89,7 +75,7 @@ func Publish(c *gin.Context) {
 	})
 }
 
-// PublishList apiRouter.GET("/publish/list/", controller.PublishList)
+// PublishList /publish/list/
 func PublishList(c *gin.Context) {
 	user_Id, _ := c.GetQuery("user_id")
 	userId, _ := strconv.ParseInt(user_Id, 10, 64)
@@ -108,4 +94,21 @@ func PublishList(c *gin.Context) {
 		Response:  Response{StatusCode: 0},
 		VideoList: list,
 	})
+}
+
+// GetVideo 拼装videoService
+func GetVideo() service.VideoServiceImpl {
+	var userService service.UserServiceImpl
+	var followService service.FollowServiceImp
+	var videoService service.VideoServiceImpl
+	var likeService service.LikeServiceImpl
+	var commentService service.CommentServiceImpl
+	userService.FollowService = &followService
+	followService.UserService = &userService
+	likeService.VideoService = &videoService
+	commentService.UserService = &userService
+	videoService.CommentService = &commentService
+	videoService.LikeService = &likeService
+	videoService.UserService = &userService
+	return videoService
 }

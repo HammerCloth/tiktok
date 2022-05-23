@@ -106,7 +106,7 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 
 // Publish
 // 将传入的视频流保存在文件服务器中，并存储在mysql表中
-func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId int64) error {
+func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId int64, title string) error {
 	//将视频流上传到视频服务器，保存视频链接
 	file, err := data.Open()
 	if err != nil {
@@ -137,7 +137,7 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	}
 	fmt.Printf("command output: %q", out.String())
 	//组装并持久化
-	err = dao.Save(videoName, imageName, userId)
+	err = dao.Save(videoName, imageName, userId, title)
 	if err != nil {
 		log.Printf("方法dao.Save(videoName, imageName, userId) 失败%v", err)
 		return err

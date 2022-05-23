@@ -1,12 +1,14 @@
 package service
 
 import (
+	"TikTok/dao"
 	"fmt"
 	"testing"
 	"time"
 )
 
 func getVideoService2() VideoService {
+	dao.Init()
 	var userService UserServiceImpl
 	var followService FollowServiceImp
 	var videoService VideoServiceImpl
