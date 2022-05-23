@@ -85,17 +85,18 @@ func (*LikeDao) GetLikeInfo(userId int64, videoId int64) (Like, error) {
 	//创建一条空like结构体，用来存储查询到的信息
 	var likeInfo Like
 	//根据userid,videoid查询是否有该条信息，如果有，存储在likeInfo,返回查询结果
-	result := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "video_id": videoId}).
-		First(&likeInfo)
-	//如果查询数据失败，返回获取likeInfo信息失败
-	if result.Error != nil {
-		log.Println(result.Error.Error())
-		return likeInfo, errors.New("get likeInfo failed")
-	}
-	//查询数据为0，打印"can't find data"，返回空结构体，这时候就应该要考虑是否插入这条数据了
-	if result.RowsAffected == 0 {
-		log.Println("can't find data")
-		return Like{}, nil
+	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "video_id": videoId}).
+		First(&likeInfo).Error
+	if err != nil {
+		//查询数据为0，打印"can't find data"，返回空结构体，这时候就应该要考虑是否插入这条数据了
+		if "record not found" == err.Error() {
+			log.Println("can't find data")
+			return Like{}, nil
+		} else {
+			//如果查询数据库失败，返回获取likeInfo信息失败
+			log.Println(err.Error())
+			return likeInfo, errors.New("get likeInfo failed")
+		}
 	}
 	return likeInfo, nil
 }
@@ -105,17 +106,18 @@ func (*LikeDao) GetLikeList(userId int64) ([]Like, error) {
 	//创建likeList切片，用来存储查询到的当前用户点赞列表信息
 	var likeList []Like
 	//根据userid查询所有点赞视频信息，如果有，存储在likeList切片中,返回查询结果
-	result := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.Islike}).
-		Find(&likeList)
-	//如果操作数据库失败，返回获取likelist失败
-	if result.Error != nil {
-		log.Println(result.Error.Error())
-		return likeList, errors.New("get likeList failed")
-	}
-	//查询数据为0，返回空likeList切片，以及返回无错误
-	if result.RowsAffected == 0 {
-		log.Println(errors.New("there are no likes"))
-		return likeList, nil
+	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.Islike}).
+		Find(&likeList).Error
+	if err != nil {
+		//查询数据为0，返回空likeList切片，以及返回无错误
+		if "record not found" == err.Error() {
+			log.Println("there are no likes")
+			return likeList, nil
+		} else {
+			//如果查询数据库失败，返回获取likelist失败
+			log.Println(err.Error())
+			return likeList, errors.New("get likeList failed")
+		}
 	}
 	return likeList, nil
 }

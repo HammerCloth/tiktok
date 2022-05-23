@@ -52,24 +52,28 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 		//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
 		if err != nil {
 			return err
-		} else if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
-			likedata.User_id = userId       //插入userid
-			likedata.Video_id = videoId     //插入videoid
-			likedata.Cancel = config.Islike //插入点赞cancel=0
-			return dao.NewLikeDaoInstance().InsertLike(likedata)
-		} else { //查到这条数据,更新即可;
-			return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Islike)
+		} else {
+			if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
+				likedata.User_id = userId       //插入userid
+				likedata.Video_id = videoId     //插入videoid
+				likedata.Cancel = config.Islike //插入点赞cancel=0
+				return dao.NewLikeDaoInstance().InsertLike(likedata)
+			} else { //查到这条数据,更新即可;
+				return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Islike)
+			}
 		}
 	} else { //取消赞行为，只有当前状态是点赞状态才会发起取消赞行为，所以如果查询到，必然是cancel==0(点赞)
 		//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
 		if err != nil {
 			return err
-		} else if likeInfo == (dao.Like{}) { //只有当前是点赞状态才能取消点赞这个行为
-			// 所以如果查询不到数据则返回错误，err:"can't find data,this action invalid"，就不该有取消赞这个行为
-			return errors.New("can't find data,this action invalid")
 		} else {
-			//如果查询到数据，则更新为取消赞状态
-			return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Unlike)
+			if likeInfo == (dao.Like{}) { //只有当前是点赞状态才能取消点赞这个行为
+				// 所以如果查询不到数据则返回错误，err:"can't find data,this action invalid"，就不该有取消赞这个行为
+				return errors.New("can't find data,this action invalid")
+			} else {
+				//如果查询到数据，则更新为取消赞状态
+				return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Unlike)
+			}
 		}
 	}
 	return nil
@@ -93,8 +97,8 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64) ([]Video, error) {
 		//video, err1 := likesub.GetVideo(likedata.Video_id,userId)
 		//调用video接口，Getvideo：根据videoid，当前用户id，返回video对象
 		video, err1 := like.GetVideo(likedata.Video_id, userId)
-		if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,抛出异常,并且跳过
-			log.Panicln(errors.New("can't find this favourite video"))
+		if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过
+			log.Println(errors.New("can't find this favourite video"))
 			continue
 		} //将每个video对象添加到集合中去
 		favorite_videolist = append(favorite_videolist, video)
