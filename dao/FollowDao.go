@@ -123,7 +123,7 @@ func (*FollowDao) FindEverFollowing(userId int64, targetId int64) (*Follow, erro
 		Where("cancel = ? or cancel = ?", 0, 1).
 		Take(&follow).Error; nil != err {
 		// 当没查到记录报错时，不当做错误处理。
-		if gorm.IsRecordNotFoundError(err) {
+		if "record not found" == err.Error() {
 			return nil, nil
 		}
 		log.Println(err.Error())
@@ -156,7 +156,7 @@ func (*FollowDao) GetFollowingIds(userId int64) ([]int64, error) {
 		Where("follower_id = ?", userId).
 		Pluck("user_id", &ids).Error; nil != err {
 		// 没有关注任何人，但是不能算错。
-		if gorm.IsRecordNotFoundError(err) {
+		if "record not found" == err.Error() {
 			return nil, nil
 		}
 		// 查询出错。
@@ -176,7 +176,7 @@ func (*FollowDao) GetFollowersIds(userId int64) ([]int64, error) {
 		Where("cancel = ?", 0).
 		Pluck("follower_id", &ids).Error; nil != err {
 		// 没有粉丝，但是不能算错。
-		if gorm.IsRecordNotFoundError(err) {
+		if "record not found" == err.Error() {
 			return nil, nil
 		}
 		// 查询出错。

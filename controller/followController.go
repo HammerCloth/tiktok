@@ -4,6 +4,7 @@ import (
 	"TikTok/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -52,6 +53,7 @@ func RelationAction(c *gin.Context) {
 	case 2 == actionType:
 		fsi.DeleteFollowRelation(userId, toUserId)
 	}
+	log.Println("关注、取关成功。")
 	c.JSON(http.StatusOK, RelationActionResp{
 		Response{
 			StatusCode: 0,
@@ -89,6 +91,7 @@ func GetFollowing(c *gin.Context) {
 		return
 	}
 	// 成功获取到关注列表。
+	log.Println("获取关注列表成功。")
 	c.JSON(http.StatusOK, FollowingResp{
 		UserList: users,
 		Response: Response{
@@ -127,6 +130,7 @@ func GetFollowers(c *gin.Context) {
 		return
 	}
 	// 成功获取到粉丝列表。
+	log.Println("获取粉丝列表成功。")
 	c.JSON(http.StatusOK, FollowersResp{
 		Response: Response{
 			StatusCode: 0,
