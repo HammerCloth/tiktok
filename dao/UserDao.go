@@ -38,7 +38,7 @@ func NewUserDaoInstance() *UserDao {
 // GetTableUserList 获取全部TableUser对象
 func (*UserDao) GetTableUserList() ([]TableUser, error) {
 	tableUsers := []TableUser{}
-	Init()
+	//Init()
 	if err := Db.Find(&tableUsers).Error; err != nil {
 		log.Println(err.Error())
 		return tableUsers, err
@@ -49,7 +49,7 @@ func (*UserDao) GetTableUserList() ([]TableUser, error) {
 // GetTableUserByUsername 根据username获得TableUser对象
 func (*UserDao) GetTableUserByUsername(name string) (TableUser, error) {
 	tableUser := TableUser{}
-	Init()
+	//Init()
 	if err := Db.Where("name = ?", name).First(&tableUser).Error; err != nil {
 		log.Println(err.Error())
 		return tableUser, err
@@ -60,7 +60,7 @@ func (*UserDao) GetTableUserByUsername(name string) (TableUser, error) {
 // GetTableUserById 根据user_id获得TableUser对象
 func (*UserDao) GetTableUserById(id int64) (TableUser, error) {
 	tableUser := TableUser{}
-	Init()
+	//Init()
 	if err := Db.Where("id = ?", id).First(&tableUser).Error; err != nil {
 		log.Println(err.Error())
 		return tableUser, err
@@ -70,7 +70,7 @@ func (*UserDao) GetTableUserById(id int64) (TableUser, error) {
 
 // InsertTableUser 将tableUser插入表内
 func (*UserDao) InsertTableUser(tableUser *TableUser) bool {
-	Init()
+	//Init()
 	if err := Db.Create(&tableUser).Error; err != nil {
 		log.Println(err.Error())
 		return false
