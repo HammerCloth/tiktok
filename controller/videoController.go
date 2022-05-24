@@ -47,9 +47,10 @@ func Feed(c *gin.Context) {
 // Publish /publish/action/
 func Publish(c *gin.Context) {
 	data, err := c.FormFile("data")
-	userId, _ := strconv.ParseInt(c.Query("user_id"), 10, 64)
-	title := c.Query("title")
+	userId, _ := strconv.ParseInt(c.Query("userId"), 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
+	title := c.PostForm("title")
+	log.Printf("获取到视频title:%v\n", title)
 	if err != nil {
 		log.Printf("获取视频流失败:%v", err)
 		c.JSON(http.StatusOK, Response{
