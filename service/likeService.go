@@ -18,5 +18,5 @@ type LikeService interface {
 	//当前操作行为，1点赞，2取消点赞。
 	FavouriteAction(userId int64, videoId int64, action_type int32) error
 	//获取当前用户的所有点赞视频，调用videoService的方法
-	GetFavouriteList(userId int64) ([]Video, error)
+	GetFavouriteList(userId int64, curId int64) ([]Video, error)
 }

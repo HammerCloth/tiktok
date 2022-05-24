@@ -21,11 +21,16 @@ func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, erro
 		return false, err
 	} else { //查询数据为0或者查询到数据，根据Cancel值判断是否点赞；
 		log.Printf("方法GetLikeInfo(userId, videoId) 成功")
-		if likedata.Cancel == config.Islike {
-			return true, nil
-		} else { //查询数据为0或者cancel为Unlike
+		if likedata == (dao.Like{}) { //查询数据为0
 			return false, nil
+		} else {
+			if likedata.Cancel == config.Islike {
+				return true, nil
+			} else { //查询cancel为Unlike
+				return false, nil
+			}
 		}
+
 	}
 }
 
@@ -79,7 +84,7 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 	return nil
 }
 
-func (like *LikeServiceImpl) GetFavouriteList(userId int64) ([]Video, error) {
+func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Video, error) {
 	//1.先查询点赞列表信息
 	likeList, err := dao.NewLikeDaoInstance().GetLikeList(userId)
 	//如果有问题，说明查询数据库失败，返回空和错误err:"get likeList failed"
@@ -96,7 +101,7 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64) ([]Video, error) {
 		//测试函数，协同开发
 		//video, err1 := likesub.GetVideo(likedata.Video_id,userId)
 		//调用video接口，Getvideo：根据videoid，当前用户id，返回video对象
-		video, err1 := like.GetVideo(likedata.Video_id, userId)
+		video, err1 := like.GetVideo(likedata.Video_id, curId)
 		if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过
 			log.Println(errors.New("can't find this favourite video"))
 			continue
