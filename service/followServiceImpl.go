@@ -66,14 +66,14 @@ func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
 // AddFollowRelation 给定当前用户和目标对象id，添加他们之间的关注关系。
 func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, error) {
 	followDao := dao.NewFollowDaoInstance()
-	follow, err := followDao.FindEverFollowing(userId, targetId)
+	follow, err := followDao.FindEverFollowing(targetId, userId)
 	// 寻找SQL 出错。
 	if nil != err {
 		return false, err
 	}
 	// 曾经关注过，只需要update一下cancel即可。
 	if nil != follow {
-		_, err := followDao.UpdateFollowRelation(userId, targetId, 0)
+		_, err := followDao.UpdateFollowRelation(targetId, userId, 0)
 		// update 出错。
 		if nil != err {
 			return false, err
@@ -82,7 +82,7 @@ func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, 
 		return true, nil
 	}
 	// 曾经没有关注过，需要插入一条关注关系。
-	_, err = followDao.InsertFollowRelation(userId, targetId)
+	_, err = followDao.InsertFollowRelation(targetId, userId)
 	if nil != err {
 		// insert 出错
 		return false, err
@@ -94,14 +94,14 @@ func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, 
 // DeleteFollowRelation 给定当前用户和目标用户id，删除其关注关系。
 func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (bool, error) {
 	followDao := dao.NewFollowDaoInstance()
-	follow, err := followDao.FindEverFollowing(userId, targetId)
+	follow, err := followDao.FindEverFollowing(targetId, userId)
 	// 寻找 SQL 出错。
 	if nil != err {
 		return false, err
 	}
 	// 曾经关注过，只需要update一下cancel即可。
 	if nil != follow {
-		_, err := followDao.UpdateFollowRelation(userId, targetId, 1)
+		_, err := followDao.UpdateFollowRelation(targetId, userId, 1)
 		// update 出错。
 		if nil != err {
 			return false, err
@@ -147,7 +147,7 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	if err := dao.Db.Raw("select id,`name`,"+
 		"\ncount(if(tag = 'follower' and cancel is not null,1,null)) follower_count,"+
 		"\ncount(if(tag = 'follow' and cancel is not null,1,null)) follow_count,"+
-		"\n'true' isFollow\nfrom\n("+
+		"\n 'true' is_follow\nfrom\n("+
 		"\n\tselect f1.follower_id fid,u.id,`name`,f2.cancel,'follower' tag"+
 		"\n\tfrom follows f1 join users u on f1.user_id = u.id and f1.cancel = 0"+
 		"\n\tleft join follows f2 on u.id = f2.user_id and f2.cancel = 0\n\tunion all"+
@@ -208,7 +208,7 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 		"\n\t\tfrom follows f1 join users u on f1.follower_id = u.id and f1.cancel = 0"+
 		"\n\t\tleft join follows f2 on u.id = f2.follower_id and f2.cancel = 0"+
 		"\n\t\t) T\n\t\tgroup by fid,id,`name`"+
-		"\n) T on f.user_id = T.fid and f.follower_id = T.id and f.cancel = 0 where fid = ?", userId).
+		"\n) T on f.user_id = T.id and f.follower_id = T.fid and f.cancel = 0 where fid = ?", userId).
 		Scan(&users).Error; nil != err {
 		// 查询出错。
 		return nil, err

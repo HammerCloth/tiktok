@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"github.com/jinzhu/gorm"
 	"log"
 	"sync"
 )
@@ -47,12 +46,12 @@ func (*FollowDao) FindRelation(userId int64, targetId int64) (*Follow, error) {
 	follow := Follow{}
 	//当查询出现错误时，日志打印err msg，并return err.
 	if err := Db.
-		Where("user_id = ?", userId).
-		Where("follower_id = ?", targetId).
+		Where("user_id = ?", targetId).
+		Where("follower_id = ?", userId).
 		Where("cancel = ?", 0).
 		Take(&follow).Error; nil != err {
 		// 当没查到数据时，gorm也会报错。
-		if gorm.IsRecordNotFoundError(err) {
+		if "record not found" == err.Error() {
 			return nil, nil
 		}
 		log.Println(err.Error())
