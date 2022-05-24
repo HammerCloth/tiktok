@@ -32,5 +32,5 @@ type VideoService interface {
 
 	// List
 	// 通过userId来查询对应用户发布的视频，并返回对应的视频切片数组
-	List(userId int64) ([]Video, error)
+	List(userId int64, curId int64) ([]Video, error)
 }

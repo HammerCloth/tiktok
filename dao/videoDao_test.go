@@ -78,5 +78,5 @@ func TestVideoFtp(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	Save("test", "test", 10024)
+	Save("test", "test", 10024, "aaa")
 }

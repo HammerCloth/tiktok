@@ -80,8 +80,10 @@ func PublishList(c *gin.Context) {
 	user_Id, _ := c.GetQuery("user_id")
 	userId, _ := strconv.ParseInt(user_Id, 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
+	curId, _ := strconv.ParseInt(c.GetString("userId"), 10, 64)
+	log.Printf("获取到当前用户id:%v\n", curId)
 	videoService := GetVideo()
-	list, err := videoService.List(userId)
+	list, err := videoService.List(userId, curId)
 	if err != nil {
 		log.Printf("调用videoService.List(%v)出现错误：%v\n", userId, err)
 		c.JSON(http.StatusOK, VideoListResponse{
