@@ -19,11 +19,10 @@ type CommentListResponse struct {
 func Comment_Action(c *gin.Context) {
 	log.Println("CommentController-Comment_Action: running") //函数已运行
 	//获取userId
-	//id, _ := c.Get("userId")
-	//userId, isItoI := id.(int64)
-	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	id, _ := c.Get("userId")
+	userid, _ := id.(string)
+	userId, err := strconv.ParseInt(userid, 10, 64)
 	log.Printf("err:%v", err)
-	//log.Printf("is interface to int64:%v", isItoI) //bool: is interface to int64
 	log.Printf("userId:%v", userId)
 	//错误处理
 	/*if err != nil {
@@ -131,11 +130,11 @@ func Comment_List(c *gin.Context) {
 	log.Println("CommentController-Comment_List: running") //函数已运行
 	//获取userId
 	id, _ := c.Get("userId")
-	userId, _ := id.(int64)
+	userid, _ := id.(string)
+	userId, err := strconv.ParseInt(userid, 10, 64)
 	//userId, err := strconv.ParseInt(c.Query("userId"), 10, 64)
-	//log.Println(err)
-	log.Printf("userId:%v", id)
-
+	log.Printf("err:%v", err)
+	log.Printf("userId:%v", userId)
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理
@@ -144,16 +143,15 @@ func Comment_List(c *gin.Context) {
 			StatusCode: -1,
 			StatusMsg:  "comment videoId json invalid",
 		})
-		log.Println("CommentController-Comment_List: return videoId json invalid") //视频参数格式有误
+		log.Println("CommentController-Comment_List: return videoId json invalid") //视频id格式有误
 		return
 	}
 	log.Printf("videoId:%v", videoId)
-	log.Printf("userId:%v", userId)
+
 	//调用service层评论函数
 	commentService := new(service.CommentServiceImpl)
 	commentList, err := commentService.GetList(videoId, userId)
 	if err != nil { //获取评论列表失败
-		log.Println(err.Error())
 		c.JSON(http.StatusOK, CommentListResponse{
 			StatusCode: -1,
 			StatusMsg:  err.Error(),

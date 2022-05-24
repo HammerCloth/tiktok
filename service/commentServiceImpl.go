@@ -25,8 +25,8 @@ func (c CommentServiceImpl) Send(comment dao.Comment) error {
 	commentInfo.User_id = comment.User_id           //评论用户id传入
 	commentInfo.Comment_text = comment.Comment_text //评论内容传入
 	commentInfo.Cancel = config.ValidComment        //评论状态，0，有效
-	nowTime := time.Now().Format(config.DateTime)
-	commentInfo.Create_date = nowTime //评论时间记录
+	//nowTime := time.Now().Format(config.DateTime)
+	commentInfo.Create_date = time.Now() //评论时间记录
 
 	return dao.NewCommentDaoInstance().InsertComment(commentInfo)
 }
@@ -40,8 +40,6 @@ func (c CommentServiceImpl) DelComment(id int64) error {
 //4、查看评论列表-返回评论list
 func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo, error) {
 	log.Println("CommentService-GetList: running") //函数已运行
-	log.Println(videoId)
-	log.Println(userId)
 	/*
 		//法一、使用SQL语句查询评论列表及用户信息，但是好像必须嵌套user信息，直接查的就不行
 		commentInfoList := make([]CommentInfo, 1)
@@ -87,7 +85,13 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		var commentInfo CommentInfo
 		commentInfo.Id = comment.Id
 		commentInfo.Content = comment.Comment_text
-		commentInfo.Create_date = comment.Create_date
+		//时间解析
+		//timeStr:=comment.Create_date
+		commentInfo.Create_date = comment.Create_date.Format(config.DateTime)
+		//dateTime, err := time.Parse(config.DateTime, comment.Create_date)
+		//commentInfo.Create_date = dateTime.Format(config.DateTime)
+		log.Printf("commentTime1:%v\n", comment.Create_date)
+		log.Printf("commentTime2:%v", commentInfo.Create_date)
 		//2.根据查询到的评论用户id和当前用户id，查询评论用户信息
 		impl := UserServiceImpl{
 			FollowService: &FollowServiceImp{},

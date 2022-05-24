@@ -5,16 +5,17 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"time"
 )
 
 //评论信息-数据库中的结构体-dao层使用
 type Comment struct {
-	Id           int64  //评论id
-	User_id      int64  //评论用户id
-	Video_id     int64  //视频id
-	Comment_text string //评论内容
-	Create_date  string //评论发布的日期mm-dd
-	Cancel       int32  //取消评论为1，发布评论为0
+	Id           int64     //评论id
+	User_id      int64     //评论用户id
+	Video_id     int64     //视频id
+	Comment_text string    //评论内容
+	Create_date  time.Time //评论发布的日期mm-dd
+	Cancel       int32     //取消评论为1，发布评论为0
 }
 
 // TableName 修改表名映射
@@ -91,11 +92,11 @@ func (*CommentDao) GetCommentList(videoId int64) ([]Comment, error) {
 	//Init()
 	var commentList []Comment
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).Find(&commentList)
-	if result.RowsAffected == 0 { //好像没有用1
+	if result.RowsAffected == 0 {
 		log.Println("CommentDao-GetCommentList: return there are no comments") //函数返回提示无评论
 		return commentList, errors.New("there are no comments")
 	}
-	if result.Error != nil { //好像没有用2
+	if result.Error != nil {
 		log.Println(result.Error.Error())
 		log.Println("CommentDao-GetCommentList: return get comment list failed") //函数返回提示无评论
 		return commentList, errors.New("get comment list failed")
