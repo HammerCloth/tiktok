@@ -2,6 +2,11 @@ package service
 
 import (
 	"TikTok/dao"
+	"TikTok/middleware"
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -65,7 +70,49 @@ func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
 
 // AddFollowRelation 给定当前用户和目标对象id，添加他们之间的关注关系。
 func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, error) {
-	followDao := dao.NewFollowDaoInstance()
+	// 加信息打入消息队列。
+	sb := strings.Builder{}
+	sb.WriteString(strconv.Itoa(int(userId)))
+	sb.WriteString(" ")
+	sb.WriteString(strconv.Itoa(int(targetId)))
+	middleware.RmqFollowAdd.Publish(sb.String())
+	// 记录日志
+	log.Println("消息打入成功。")
+	// 更新redis信息。
+	/*
+		1-Redis是否存在followers_targetId.
+		2-Redis是否存在following_userId.
+		3-Redis是否存在user_targetId和user_userId.
+		4-Redis是否存在following_part_userId.
+	*/
+	// step1
+	followersId := fmt.Sprintf("followers_%v", targetId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followersId).Result(); 0 != cnt {
+		middleware.Rdb.SAdd(middleware.Ctx, followersId, userId)
+	}
+	// step2
+	followingId := fmt.Sprintf("followers_%v", userId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followingId).Result(); 0 != cnt {
+		middleware.Rdb.SAdd(middleware.Ctx, followingId, targetId)
+	}
+	// step3
+	userTargetId := fmt.Sprintf("user_%v", targetId)
+	userUserId := fmt.Sprintf("user_%v", userId)
+	if flag, _ := middleware.Rdb.HExists(middleware.Ctx, userTargetId, "name").Result(); flag {
+		param, _ := middleware.Rdb.HGet(middleware.Ctx, userTargetId, "follower_count").Result()
+		followerCount, _ := strconv.Atoi(param)
+		middleware.Rdb.HSet(middleware.Ctx, userTargetId, "follower_count", followerCount+1)
+	}
+	if flag, _ := middleware.Rdb.HExists(middleware.Ctx, userUserId, "name").Result(); flag {
+		param, _ := middleware.Rdb.HGet(middleware.Ctx, userUserId, "follow_count").Result()
+		followCount, _ := strconv.Atoi(param)
+		middleware.Rdb.HSet(middleware.Ctx, userTargetId, "follow_count", followCount+1)
+	}
+	// step4
+	followingPartUserId := fmt.Sprintf("following_part_%v", userId)
+	middleware.Rdb.SAdd(middleware.Ctx, followingPartUserId, targetId)
+	return true, nil
+	/*followDao := dao.NewFollowDaoInstance()
 	follow, err := followDao.FindEverFollowing(targetId, userId)
 	// 寻找SQL 出错。
 	if nil != err {
@@ -88,12 +135,54 @@ func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, 
 		return false, err
 	}
 	// insert 成功。
-	return true, nil
+	return true, nil*/
 }
 
 // DeleteFollowRelation 给定当前用户和目标用户id，删除其关注关系。
 func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (bool, error) {
-	followDao := dao.NewFollowDaoInstance()
+	// 加信息打入消息队列。
+	sb := strings.Builder{}
+	sb.WriteString(strconv.Itoa(int(userId)))
+	sb.WriteString(" ")
+	sb.WriteString(strconv.Itoa(int(targetId)))
+	middleware.RmqFollowDel.Publish(sb.String())
+	// 记录日志
+	log.Println("消息打入成功。")
+	// 更新redis信息。
+	/*
+		1-Redis是否存在followers_targetId.
+		2-Redis是否存在following_userId.
+		3-Redis是否存在user_targetId和user_userId.
+		4-Redis是否存在following_part_userId.
+	*/
+	// step1
+	followersId := fmt.Sprintf("followers_%v", targetId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followersId).Result(); 0 != cnt {
+		middleware.Rdb.SRem(middleware.Ctx, followersId, userId)
+	}
+	// step2
+	followingId := fmt.Sprintf("followers_%v", userId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followingId).Result(); 0 != cnt {
+		middleware.Rdb.SRem(middleware.Ctx, followingId, targetId)
+	}
+	// step3
+	userTargetId := fmt.Sprintf("user_%v", targetId)
+	userUserId := fmt.Sprintf("user_%v", userId)
+	if flag, _ := middleware.Rdb.HExists(middleware.Ctx, userTargetId, "name").Result(); flag {
+		param, _ := middleware.Rdb.HGet(middleware.Ctx, userTargetId, "follower_count").Result()
+		followerCount, _ := strconv.Atoi(param)
+		middleware.Rdb.HSet(middleware.Ctx, userTargetId, "follower_count", followerCount-1)
+	}
+	if flag, _ := middleware.Rdb.HExists(middleware.Ctx, userUserId, "name").Result(); flag {
+		param, _ := middleware.Rdb.HGet(middleware.Ctx, userUserId, "follow_count").Result()
+		followCount, _ := strconv.Atoi(param)
+		middleware.Rdb.HSet(middleware.Ctx, userTargetId, "follow_count", followCount-1)
+	}
+	// step4
+	followingPartUserId := fmt.Sprintf("following_part_%v", userId)
+	middleware.Rdb.SRem(middleware.Ctx, followingPartUserId, targetId)
+	return true, nil
+	/*followDao := dao.NewFollowDaoInstance()
 	follow, err := followDao.FindEverFollowing(targetId, userId)
 	// 寻找 SQL 出错。
 	if nil != err {
@@ -110,7 +199,7 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 		return true, nil
 	}
 	// 没有关注关系
-	return false, nil
+	return false, nil*/
 }
 
 // GetFollowing 根据当前用户id来查询他的关注者列表。
@@ -142,6 +231,60 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 }*/
 // GetFollowing 根据当前用户id来查询他的关注者列表。
 func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
+	// 先查Redis，看是否有全部关注信息。
+	followingId := fmt.Sprintf("following_%v", userId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followingId).Result(); 0 == cnt {
+		users, _ := getFollowing(userId)
+
+		go setRedisFollowing(userId, users)
+
+		return users, nil
+	}
+	// Redis中有。
+	userIds, _ := middleware.Rdb.SMembers(middleware.Ctx, followingId).Result()
+	len := len(userIds)
+	users := make([]User, len)
+	for i := 0; i < len; i++ {
+		userUserId := fmt.Sprintf("user_%v", userIds[i])
+
+		user, _ := middleware.Rdb.HGetAll(middleware.Ctx, userUserId).Result()
+		uid, _ := strconv.Atoi(userIds[i])
+		users[i].Id = int64(uid)
+		users[i].Name = user["name"]
+		cnt, _ := strconv.Atoi(user["follow_count"])
+		users[i].FollowCount = int64(cnt)
+		cnt, _ = strconv.Atoi(user["follower_count"])
+		users[i].FollowerCount = int64(cnt)
+		// 必然是关注情况。
+		users[i].IsFollow = true
+	}
+	go log.Println("从Redis中查询到所有关注者。")
+	return users, nil
+}
+
+// 设置Redis关于关注的信息。
+func setRedisFollowing(userId int64, users []User) {
+	/*
+		1-设置following_userId的所有关注id。
+		2-设置user_userId基本信息。
+		3-设置following_part_id关注信息。
+	*/
+	for _, user := range users {
+		followingId := fmt.Sprintf("following_%v", userId)
+		middleware.Rdb.SAdd(middleware.Ctx, followingId, user.Id)
+		userUserId := fmt.Sprintf("user_%v", user.Id)
+		middleware.Rdb.HSet(middleware.Ctx, userUserId, map[string]interface{}{
+			"name":           user.Name,
+			"follow_count":   user.FollowCount,
+			"follower_count": user.FollowerCount,
+		})
+		followingPartId := followingId
+		middleware.Rdb.SAdd(middleware.Ctx, followingPartId, user.Id)
+	}
+}
+
+// 从数据库查所有关注用户信息。
+func getFollowing(userId int64) ([]User, error) {
 	users := make([]User, 1)
 	// 查询出错。
 	if err := dao.Db.Raw("select id,`name`,"+
