@@ -8,6 +8,8 @@ import (
 func main() {
 	// 初始化数据库
 	dao.Init()
+	// 初始化FTP服务器链接
+	dao.InitFTP()
 
 	r := gin.Default()
 
