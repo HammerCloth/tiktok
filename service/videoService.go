@@ -13,6 +13,7 @@ type Video struct {
 	FavoriteCount int64  `json:"favorite_count"`
 	CommentCount  int64  `json:"comment_count"`
 	IsFavorite    bool   `json:"is_favorite"`
+	Title         string `json:"title"`
 }
 
 type VideoService interface {
@@ -26,9 +27,10 @@ type VideoService interface {
 
 	// Publish
 	// 将传入的视频流保存在文件服务器中，并存储在mysql表中
-	Publish(data *multipart.FileHeader, userId int64) error
+	// 5.23 加入title
+	Publish(data *multipart.FileHeader, userId int64, title string) error
 
 	// List
 	// 通过userId来查询对应用户发布的视频，并返回对应的视频切片数组
-	List(userId int64) ([]Video, error)
+	List(userId int64, curId int64) ([]Video, error)
 }

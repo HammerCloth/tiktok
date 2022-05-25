@@ -106,7 +106,7 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 
 // Publish
 // 将传入的视频流保存在文件服务器中，并存储在mysql表中
-func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId int64) error {
+func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId int64, title string) error {
 	//将视频流上传到视频服务器，保存视频链接
 	file, err := data.Open()
 	if err != nil {
@@ -137,7 +137,7 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	}
 	fmt.Printf("command output: %q", out.String())
 	//组装并持久化
-	err = dao.Save(videoName, imageName, userId)
+	err = dao.Save(videoName, imageName, userId, title)
 	if err != nil {
 		log.Printf("方法dao.Save(videoName, imageName, userId) 失败%v", err)
 		return err
@@ -148,7 +148,7 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 
 // List
 // 通过userId来查询对应用户发布的视频，并返回对应的视频数组
-func (videoService *VideoServiceImpl) List(userId int64) ([]Video, error) {
+func (videoService *VideoServiceImpl) List(userId int64, curId int64) ([]Video, error) {
 	//依据用户id查询所有的视频，获取视频列表
 	data, err := dao.GetVideosByAuthorId(userId)
 	if err != nil {
@@ -159,7 +159,7 @@ func (videoService *VideoServiceImpl) List(userId int64) ([]Video, error) {
 	//提前定义好切片长度
 	result := make([]Video, 0, len(data))
 	//调用拷贝方法，将数据进行转换
-	err = videoService.copyVideos(&result, &data, userId)
+	err = videoService.copyVideos(&result, &data, curId)
 	if err != nil {
 		log.Printf("方法videoService.copyVideos(&result, &data, %v)失败:%v", userId, err)
 		return nil, err

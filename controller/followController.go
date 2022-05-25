@@ -29,12 +29,13 @@ type FollowersResp struct {
 
 // RelationAction 处理关注和取消关注请求。
 func RelationAction(c *gin.Context) {
-	userId, err1 := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	userId, err1 := strconv.ParseInt(c.GetString("userId"), 10, 64)
 	toUserId, err2 := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 	actionType, err3 := strconv.ParseInt(c.Query("action_type"), 10, 64)
 	fmt.Println(userId, toUserId, actionType)
 	// 传入参数格式有问题。
 	if nil != err1 || nil != err2 || nil != err3 || actionType < 1 || actionType > 2 {
+		fmt.Printf("fail")
 		c.JSON(http.StatusOK, RelationActionResp{
 			Response{
 				StatusCode: -1,

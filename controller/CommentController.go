@@ -17,16 +17,22 @@ type CommentListResponse struct {
 
 //-发表 or 删除评论 comment/action/
 func Comment_Action(c *gin.Context) {
+	log.Println("CommentController-Comment_Action: running") //函数已运行
 	//获取userId
-	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	id, _ := c.Get("userId")
+	userid, _ := id.(string)
+	userId, err := strconv.ParseInt(userid, 10, 64)
+	log.Printf("err:%v", err)
+	log.Printf("userId:%v", userId)
 	//错误处理
-	if err != nil {
+	/*if err != nil {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: -1,
 			StatusMsg:  "comment userId json invalid",
 		})
+		log.Println("CommentController-Comment_Action: return comment userId json invalid") //函数返回提示错误信息
 		return
-	}
+	}*/
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理
@@ -35,6 +41,7 @@ func Comment_Action(c *gin.Context) {
 			StatusCode: -1,
 			StatusMsg:  "comment videoId json invalid",
 		})
+		log.Println("CommentController-Comment_Action: return comment videoId json invalid") //函数返回提示错误信息
 		return
 	}
 	//获取操作类型
@@ -45,6 +52,7 @@ func Comment_Action(c *gin.Context) {
 			StatusCode: -1,
 			StatusMsg:  "comment actionType json invalid",
 		})
+		log.Println("CommentController-Comment_Action: return actionType json invalid") //评论类型数据无效
 		return
 	}
 	//调用service层评论函数
@@ -61,6 +69,7 @@ func Comment_Action(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "send comment failed",
 			})
+			log.Println("CommentController-Comment_Action: return send comment failed") //删除失败
 			return
 		}
 
@@ -82,6 +91,7 @@ func Comment_Action(c *gin.Context) {
 			StatusCode: 0,
 			StatusMsg:  "send comment success",
 		})
+		log.Println("CommentController-Comment_Action: return Send success") //发表评论成功，返回正确信息
 		return
 	} else { //actionType为2，则进行删除评论操作
 		//获取要删除的评论的id
@@ -91,6 +101,7 @@ func Comment_Action(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  "delete commentId invalid",
 			})
+			log.Println("CommentController-Comment_Action: return commentId invalid") //评论id格式错误
 			return
 		}
 		//删除评论操作
@@ -101,6 +112,7 @@ func Comment_Action(c *gin.Context) {
 				StatusCode: -1,
 				StatusMsg:  str,
 			})
+			log.Println("CommentController-Comment_Action: return delete comment failed") //删除失败
 			return
 		}
 		//删除评论成功
@@ -108,22 +120,21 @@ func Comment_Action(c *gin.Context) {
 			StatusCode: 0,
 			StatusMsg:  "delete comment success",
 		})
+		log.Println("CommentController-Comment_Action: return delete success") //函数执行成功，返回正确信息
 		return
 	}
 }
 
 //-查看评论列表 comment/list/
 func Comment_List(c *gin.Context) {
+	log.Println("CommentController-Comment_List: running") //函数已运行
 	//获取userId
-	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
-	//错误处理
-	if err != nil {
-		c.JSON(http.StatusOK, Response{
-			StatusCode: -1,
-			StatusMsg:  "comment userId json invalid",
-		})
-		return
-	}
+	id, _ := c.Get("userId")
+	userid, _ := id.(string)
+	userId, err := strconv.ParseInt(userid, 10, 64)
+	//userId, err := strconv.ParseInt(c.Query("userId"), 10, 64)
+	log.Printf("err:%v", err)
+	log.Printf("userId:%v", userId)
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理
@@ -132,19 +143,20 @@ func Comment_List(c *gin.Context) {
 			StatusCode: -1,
 			StatusMsg:  "comment videoId json invalid",
 		})
+		log.Println("CommentController-Comment_List: return videoId json invalid") //视频id格式有误
 		return
 	}
-	log.Println(videoId)
-	log.Println(userId)
+	log.Printf("videoId:%v", videoId)
+
 	//调用service层评论函数
 	commentService := new(service.CommentServiceImpl)
 	commentList, err := commentService.GetList(videoId, userId)
 	if err != nil { //获取评论列表失败
-		log.Println(err.Error())
 		c.JSON(http.StatusOK, CommentListResponse{
 			StatusCode: -1,
-			StatusMsg:  "get comment list failed",
+			StatusMsg:  err.Error(),
 		})
+		log.Println("CommentController-Comment_List: return list false") //查询列表失败
 		return
 	}
 
@@ -160,6 +172,6 @@ func Comment_List(c *gin.Context) {
 		StatusMsg:    "get comment list success",
 		Comment_list: commentList,
 	})
-	//log.Println(str)
+	log.Println("CommentController-Comment_List: return success") //成功返回列表
 	return
 }

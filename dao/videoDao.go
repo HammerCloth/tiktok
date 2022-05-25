@@ -13,6 +13,7 @@ type TableVideo struct {
 	PlayUrl     string
 	CoverUrl    string
 	PublishTime time.Time `copier:"-"` //在拷贝时忽略
+	Title       string    //视频名，5.23添加
 }
 
 // TableName
@@ -117,13 +118,14 @@ func ImageFTP(file io.Reader, imageName string) error {
 }
 
 // Save 保存视频记录
-func Save(videoName string, imageName string, authorId int64) error {
+func Save(videoName string, imageName string, authorId int64, title string) error {
 	//Init()
 	var video TableVideo
 	video.PublishTime = time.Now()
 	video.PlayUrl = config.PlayUrlPrefix + videoName + ".mp4"
 	video.CoverUrl = config.CoverUrlPrefix + imageName
 	video.AuthorId = authorId
+	video.Title = title
 	result := Db.Save(&video)
 	if result.Error != nil {
 		return result.Error

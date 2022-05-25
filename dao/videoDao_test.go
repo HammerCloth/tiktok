@@ -20,9 +20,11 @@ func TestFind(t *testing.T) {
 	fmt.Println(tv.CoverUrl)
 	fmt.Println(tv.PlayUrl)
 	fmt.Println(tv.PublishTime)
+	fmt.Println(tv.Title)
 }
 
 func TestGetVideosByAuthorId(t *testing.T) {
+	Init()
 	data, err := GetVideosByAuthorId(2)
 	if err != nil {
 		print(err)
@@ -33,6 +35,7 @@ func TestGetVideosByAuthorId(t *testing.T) {
 }
 
 func TestGetVideoByVideoId(t *testing.T) {
+	Init()
 	data, err := GetVideoByVideoId(1)
 	if err != nil {
 		print(err)
@@ -42,6 +45,7 @@ func TestGetVideoByVideoId(t *testing.T) {
 }
 
 func TestGetVideosByLastTime(t *testing.T) {
+	Init()
 	data, err := GetVideosByLastTime(time.Now())
 	if err != nil {
 		return
@@ -74,5 +78,5 @@ func TestVideoFtp(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	Save("test", "test", 10024)
+	Save("test", "test", 10024, "aaa")
 }

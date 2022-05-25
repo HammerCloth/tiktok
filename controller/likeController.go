@@ -21,7 +21,7 @@ type GetFavouriteListResponse struct {
 
 //点赞或者取消赞操作;
 func Favorite_Action(c *gin.Context) {
-	user_id := c.Query("user_id")
+	user_id := c.GetString("userId")
 	userid, _ := strconv.ParseInt(user_id, 10, 64)
 	video_id := c.Query("video_id")
 	videoid, _ := strconv.ParseInt(video_id, 10, 64)
@@ -48,9 +48,11 @@ func Favorite_Action(c *gin.Context) {
 //获取点赞列表;
 func GetFavouriteList(c *gin.Context) {
 	user_id := c.Query("user_id")
+	cur_id := c.GetString("userId")
 	userid, _ := strconv.ParseInt(user_id, 10, 64)
+	curid, _ := strconv.ParseInt(cur_id, 10, 64)
 	like := GetVideo()
-	videos, err := like.GetFavouriteList(userid)
+	videos, err := like.GetFavouriteList(userid, curid)
 	if err == nil {
 		log.Printf("方法like.GetFavouriteList(userid) 成功")
 		c.JSON(http.StatusOK, GetFavouriteListResponse{
