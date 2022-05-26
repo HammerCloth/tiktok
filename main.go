@@ -15,6 +15,7 @@ func main() {
 	middleware.InitRabbitMQ()
 	// 初始化Follow的相关消息队列，并开启消费。
 	middleware.InitFollowRabbitMQ()
+	middleware.InitLikeRabbitMQ()
 	// 初始化FTP服务器链接
 	dao.InitFTP()
 

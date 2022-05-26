@@ -3,110 +3,228 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
+	"TikTok/middleware"
 	"errors"
 	"log"
+	"strconv"
+	"strings"
 )
 
 type LikeServiceImpl struct {
 	VideoService
 }
 
-//根据userid,videoid查询点赞信息
+// 根据userid,videoid查询点赞信息 这边可以快一点（修改下）判断两个redis
+//Redis是否存在userId set{videoid} 点赞的视频id 功能： 判断是否存在该videoid来判断是否点赞
 func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, error) {
-	//查询该点赞信息在数据库中是否存在
-	likedata, err := dao.NewLikeDaoInstance().GetLikeInfo(userId, videoId)
-	//如果有问题，说明操作数据库失败,返回默认未点赞,输出错误信息err:"get likeInfo failed"
-	if err != nil {
-		log.Printf("方法GetLikeInfo(userId, videoId) 失败：%v", err)
-		return false, err
-	} else { //查询数据为0或者查询到数据，根据Cancel值判断是否点赞；
-		log.Printf("方法GetLikeInfo(userId, videoId) 成功")
-		if likedata == (dao.Like{}) { //查询数据为0
-			return false, nil
-		} else {
-			if likedata.Cancel == config.Islike {
-				return true, nil
-			} else { //查询cancel为Unlike
-				return false, nil
-			}
+	suserId := string(userId)
+	svideoId := string(videoId)
+	//step1  如果userid存在 则判断videoid是否存在
+	if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
+		exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, svideoId).Result()
+		//如果有问题，说明操作redis失败,返回默认false,返回错误信息
+		if err != nil {
+			log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
+			return false, err
 		}
-
+		log.Printf("RedisIsFavourit(videoId) 成功")
+		return exist, nil
+	} else { //如果不存在，则判断redis videoid 是否存在
+		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, suserId).Result(); n > 0 {
+			exist, err := middleware.Rdb6.SIsMember(middleware.Ctx, svideoId, suserId).Result()
+			//如果有问题，说明操作redis失败,返回默认false,返回错误信息
+			if err != nil {
+				log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
+				return false, err
+			}
+			log.Printf("RedisIsFavourit(videoId) 成功")
+			return exist, nil
+		} else { // 还不存在则新建key，搜索数据库videoid，然后依次加入，再判断videoid是否存在
+			videoIdList, err1 := dao.GetLikeVideoIdList(userId)
+			if err1 != nil {
+				log.Printf(err1.Error())
+				return false, err1
+			}
+			for _, likeVideoId := range videoIdList {
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+			}
+			exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, svideoId).Result()
+			//如果有问题，说明操作redis失败,返回默认false,返回错误信息
+			if err != nil {
+				log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
+				return false, err
+			}
+			log.Printf("RedisIsFavourit(videoId) 成功")
+			return exist, nil
+		}
 	}
 }
 
-//根据videoid获取点赞数量
+//根据videoid获取点赞数量  Redis是否存在videoId set{userid} 点赞的用户id   功能：计算size得到该视频点赞数
 func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 	//查询videoid对应点赞数量
-	count, err := dao.NewLikeDaoInstance().GetLikeCount(videoId)
-	//如果有问题，说明操作数据库失败,返回默认0,返回错误信息err:"An unknown exception occurred in the query"
-	if err != nil {
-		log.Printf("方法GetLikeCount(videoId) 失败：%v", err)
-		return count, err
+	svideoId := string(videoId)
+	//step1 如果videoId存在 则计算点赞userid
+	if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
+		count, err := middleware.Rdb6.SCard(middleware.Ctx, svideoId).Result()
+		//如果有问题，说明操作redis失败,返回默认0,返回错误信息
+		if err != nil {
+			log.Printf("RedisLikeCount(videoId) 失败：%v", err)
+			return 0, err
+		}
+		log.Printf("RedisLikeCount(videoId) 成功")
+		return count, nil
+	} else { //如果不存在，则新建key，搜索数据库userid，然后依次加入,然后计算size
+		userIdList, err1 := dao.GetLikeUserIdList(videoId)
+		if err1 != nil {
+			log.Printf(err1.Error())
+			return 0, err1
+		}
+		for _, likeUserId := range userIdList {
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+		}
+		count, err := middleware.Rdb6.SCard(middleware.Ctx, svideoId).Result()
+		//如果有问题，说明操作redis失败,返回默认0,返回错误信息
+		if err != nil {
+			log.Printf("RedisLikeCount(videoId) 失败：%v", err)
+			return 0, err
+		}
+		log.Printf("RedisLikeCount(videoId) 成功")
+		return count, nil
 	}
-	log.Printf("方法GetLikeCount(videoId) 成功")
-	return count, err
 }
 
 func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action_type int32) error {
-	//如果查询没有数据，用来生成该条点赞信息，存储在likedata中
-	var likedata dao.Like
-	//先查询是否有这条数据
-	likeInfo, err := dao.NewLikeDaoInstance().GetLikeInfo(userId, videoId)
-	//点赞行为
+	// 加信息打入消息队列。
+	sb := strings.Builder{}
+	sb.WriteString(strconv.Itoa(int(userId)))
+	sb.WriteString(" ")
+	sb.WriteString(strconv.Itoa(int(videoId)))
 	if action_type == config.Likeaction {
-		//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
-		if err != nil {
-			return err
-		} else {
-			if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
-				likedata.User_id = userId       //插入userid
-				likedata.Video_id = videoId     //插入videoid
-				likedata.Cancel = config.Islike //插入点赞cancel=0
-				return dao.NewLikeDaoInstance().InsertLike(likedata)
-			} else { //查到这条数据,更新即可;
-				return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Islike)
+		middleware.RmqLikeAdd.Publish(sb.String())
+	} else {
+		middleware.RmqLikeDel.Publish(sb.String())
+	}
+	// 更新redis信息。
+	/*
+		1-Redis是否存在userId set{videoid} 点赞的视频id   功能： 计算size得到用户的喜欢数，用户的喜欢列表
+		2-Redis是否存在videoId set{userid} 点赞的用户id   功能：计算size得到该视频点赞数
+	*/
+	suserId := string(userId)
+	svideoId := string(videoId)
+	if action_type == config.Likeaction {
+		//step1  如果userid存在 则加入点赞videoid
+		if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, svideoId)
+		} else { //如果不存在，则新建key，加入点赞videoid,搜索数据库videoid，然后依次加入
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, svideoId)
+			videoIdList, err := dao.GetLikeVideoIdList(userId)
+			if err != nil {
+				return err
+			}
+			for _, likeVideoId := range videoIdList {
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
 			}
 		}
-	} else { //取消赞行为，只有当前状态是点赞状态才会发起取消赞行为，所以如果查询到，必然是cancel==0(点赞)
-		//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
-		if err != nil {
-			return err
-		} else {
-			if likeInfo == (dao.Like{}) { //只有当前是点赞状态才能取消点赞这个行为
-				// 所以如果查询不到数据则返回错误，err:"can't find data,this action invalid"，就不该有取消赞这个行为
-				return errors.New("can't find data,this action invalid")
-			} else {
-				//如果查询到数据，则更新为取消赞状态
-				return dao.NewLikeDaoInstance().UpdateLike(userId, videoId, config.Unlike)
+		//step2  如果videoId存在 则加入点赞userid
+		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+		} else { //如果不存在，则新建key，加入点赞userid,搜索数据库userid，然后依次加入
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+			userIdList, err := dao.GetLikeUserIdList(videoId)
+			if err != nil {
+				return err
 			}
+			for _, likeUserId := range userIdList {
+				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+			}
+		}
+	} else { //取消赞
+		//step1  如果userid存在 则删除点赞videoid
+		if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
+			middleware.Rdb5.SRem(middleware.Ctx, suserId, svideoId)
+		} else { //如果不存在，则新建key,搜索数据库videoid，然后依次加入,再删除点赞videoid
+			videoIdList, err := dao.GetLikeVideoIdList(userId)
+			if err != nil {
+				return err
+			}
+			for _, likeVideoId := range videoIdList {
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+			}
+			middleware.Rdb5.SRem(middleware.Ctx, suserId, svideoId)
+		}
+		//step2  如果videoId存在 则删除点赞userid
+		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+		} else { //如果不存在，则新建key,搜索数据库userid，然后依次加入,再删除点赞userid,
+			userIdList, err := dao.GetLikeUserIdList(videoId)
+			if err != nil {
+				return err
+			}
+			for _, likeUserId := range userIdList {
+				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+			}
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
 		}
 	}
 	return nil
 }
 
 func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Video, error) {
-	//1.先查询点赞列表信息
-	likeList, err := dao.NewLikeDaoInstance().GetLikeList(userId)
-	//如果有问题，说明查询数据库失败，返回空和错误err:"get likeList failed"
-	if err != nil {
-		log.Println(err.Error())
-		return nil, err
+	//1.先查询点赞列表信息  Redis是否存在userId set{videoid} 点赞的视频id
+	//功能： 计算size得到用户的喜欢数，用户的喜欢列表
+	suserId := string(userId)
+	//step1  如果userid存在 则获取集合中全部videoid
+	if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
+		videoIdList, err := middleware.Rdb5.SMembers(middleware.Ctx, suserId).Result()
+		if err != nil {
+			log.Printf("RedisGetFavouriteList(userId) 失败：%v", err)
+			return nil, err
+		}
+		//提前定义好切片长度,生成集合
+		favorite_videolist := make([]Video, 0, len(videoIdList))
+		//如果查询成功，无论是否有数据，遍历likelist,获得其中的video_id；
+		//测试结构体，协同开发
+		//likesub := new(LikeSub)
+		for _, likeVideoId := range videoIdList {
+			//测试函数，协同开发
+			//video, err1 := likesub.GetVideo(likedata.Video_id,userId)
+			//调用video接口，Getvideo：根据videoid，当前用户id，返回video对象
+			VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
+			video, err1 := like.GetVideo(VideoId, curId)
+			if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过
+				log.Println(errors.New("can't find this favourite video"))
+				continue
+			} //将每个video对象添加到集合中去
+			favorite_videolist = append(favorite_videolist, video)
+		}
+		return favorite_videolist, nil
+	} else { //如果不存在，则新建key，搜索数据库videoid，得到videoIdList，然后依次加入
+		videoIdList, err := dao.GetLikeVideoIdList(userId)
+		//如果有问题，说明查询数据库失败，返回空和错误err:"get likeList failed"
+		if err != nil {
+			log.Println(err.Error())
+			return nil, err
+		}
+		for _, likeVideoId := range videoIdList {
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+		}
+		//提前定义好切片长度,生成集合
+		favorite_videolist := make([]Video, 0, len(videoIdList))
+		//如果查询成功，无论是否有数据，遍历likelist,获得其中的video_id；
+		//测试结构体，协同开发
+		//likesub := new(LikeSub)
+		for _, likeVideoId := range videoIdList {
+			//测试函数，协同开发
+			//video, err1 := likesub.GetVideo(likedata.Video_id,userId)
+			//调用video接口，Getvideo：根据videoid，当前用户id，返回video对象
+			video, err1 := like.GetVideo(likeVideoId, curId)
+			if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过
+				log.Println(errors.New("can't find this favourite video"))
+				continue
+			} //将每个video对象添加到集合中去
+			favorite_videolist = append(favorite_videolist, video)
+		}
+		return favorite_videolist, nil
 	}
-	//提前定义好切片长度,生成集合
-	favorite_videolist := make([]Video, 0, len(likeList))
-	//如果查询成功，无论是否有数据，遍历likelist,获得其中的video_id；
-	//测试结构体，协同开发
-	//likesub := new(LikeSub)
-	for _, likedata := range likeList {
-		//测试函数，协同开发
-		//video, err1 := likesub.GetVideo(likedata.Video_id,userId)
-		//调用video接口，Getvideo：根据videoid，当前用户id，返回video对象
-		video, err1 := like.GetVideo(likedata.Video_id, curId)
-		if err1 != nil { //如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过
-			log.Println(errors.New("can't find this favourite video"))
-			continue
-		} //将每个video对象添加到集合中去
-		favorite_videolist = append(favorite_videolist, video)
-	}
-	return favorite_videolist, nil
 }
