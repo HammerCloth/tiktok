@@ -32,7 +32,7 @@ func RelationAction(c *gin.Context) {
 	userId, err1 := strconv.ParseInt(c.GetString("userId"), 10, 64)
 	toUserId, err2 := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 	actionType, err3 := strconv.ParseInt(c.Query("action_type"), 10, 64)
-	go fmt.Println(userId, toUserId, actionType)
+	// fmt.Println(userId, toUserId, actionType)
 	// 传入参数格式有问题。
 	if nil != err1 || nil != err2 || nil != err3 || actionType < 1 || actionType > 2 {
 		fmt.Printf("fail")
@@ -54,7 +54,7 @@ func RelationAction(c *gin.Context) {
 	case 2 == actionType:
 		go fsi.DeleteFollowRelation(userId, toUserId)
 	}
-	go log.Println("关注、取关成功。")
+	log.Println("关注、取关成功。")
 	c.JSON(http.StatusOK, RelationActionResp{
 		Response{
 			StatusCode: 0,
@@ -131,7 +131,7 @@ func GetFollowers(c *gin.Context) {
 		return
 	}
 	// 成功获取到粉丝列表。
-	go log.Println("获取粉丝列表成功。")
+	//log.Println("获取粉丝列表成功。")
 	c.JSON(http.StatusOK, FollowersResp{
 		Response: Response{
 			StatusCode: 0,

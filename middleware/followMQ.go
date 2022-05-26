@@ -127,7 +127,7 @@ func (f *FollowMQ) consumerFollowDel(msgs <-chan amqp.Delivery) {
 		targetId, _ := strconv.Atoi(params[1])
 		// 日志记录。
 		sql := fmt.Sprintf("CALL delFollowRelation(%v,%v)", targetId, userId)
-		log.Printf("消费队列执行删除关系。SQL如下：%s", sql)
+		//log.Printf("消费队列执行删除关系。SQL如下：%s", sql)
 		// 执行SQL，注必须scan，该SQL才能被执行。
 		if err := dao.Db.Raw(sql).Scan(nil).Error; nil != err {
 			// 执行出错，打印日志。
