@@ -38,7 +38,7 @@ func initRouter(r *gin.Engine) {
 		评论模块
 	*/
 	//发表评论
-	apiRouter.POST("/comment/action/", middleware.Auth(), controller.Comment_Action)
+	apiRouter.POST("/comment/action/", middleware.Auth(), controller.CommentAction)
 	//查看评论列表
-	apiRouter.GET("/comment/list/", middleware.Auth(), controller.Comment_List)
+	apiRouter.GET("/comment/list/", middleware.Auth(), controller.CommentList)
 }

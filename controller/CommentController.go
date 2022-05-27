@@ -10,13 +10,14 @@ import (
 )
 
 type CommentListResponse struct {
-	StatusCode   int32                 `json:"status_code"`
-	StatusMsg    string                `json:"status_msg,omitempty"`
-	Comment_list []service.CommentInfo `json:"comment_list,omitempty"`
+	StatusCode  int32                 `json:"status_code"`
+	StatusMsg   string                `json:"status_msg,omitempty"`
+	CommentList []service.CommentInfo `json:"comment_list,omitempty"`
 }
 
-//-发表 or 删除评论 comment/action/
-func Comment_Action(c *gin.Context) {
+// CommentAction
+// 发表 or 删除评论 comment/action/
+func CommentAction(c *gin.Context) {
 	log.Println("CommentController-Comment_Action: running") //函数已运行
 	//获取userId
 	id, _ := c.Get("userId")
@@ -25,14 +26,14 @@ func Comment_Action(c *gin.Context) {
 	log.Printf("err:%v", err)
 	log.Printf("userId:%v", userId)
 	//错误处理
-	/*if err != nil {
+	if err != nil {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: -1,
 			StatusMsg:  "comment userId json invalid",
 		})
 		log.Println("CommentController-Comment_Action: return comment userId json invalid") //函数返回提示错误信息
 		return
-	}*/
+	}
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理
@@ -60,9 +61,9 @@ func Comment_Action(c *gin.Context) {
 	if actionType == 1 { //actionType为1，则进行发表评论操作
 		content := c.Query("comment_text")
 		var sendComment dao.Comment
-		sendComment.User_id = userId
-		sendComment.Video_id = videoId
-		sendComment.Comment_text = content
+		sendComment.UserId = userId
+		sendComment.VideoId = videoId
+		sendComment.CommentText = content
 		//发表评论
 		if commentService.Send(sendComment) != nil { //发表评论失败
 			c.JSON(http.StatusOK, Response{
@@ -72,19 +73,6 @@ func Comment_Action(c *gin.Context) {
 			log.Println("CommentController-Comment_Action: return send comment failed") //删除失败
 			return
 		}
-
-		/*//测试count函数+++++++++++++++++++++：
-		count0, err := commentService.CountFromVideoId(videoId)
-		if err != nil {
-			c.JSON(http.StatusOK, Response{
-				StatusCode: -1,
-				StatusMsg:  "count comment failed",
-			})
-			return
-		}
-		var str string
-		str = "send comment " + strconv.Itoa(int(count0)) + " success"
-		//+++++++++++++++++++++++++++++++++++++*/
 
 		//发表评论成功
 		c.JSON(http.StatusOK, Response{
@@ -125,8 +113,9 @@ func Comment_Action(c *gin.Context) {
 	}
 }
 
-//-查看评论列表 comment/list/
-func Comment_List(c *gin.Context) {
+// CommentList
+// 查看评论列表 comment/list/
+func CommentList(c *gin.Context) {
 	log.Println("CommentController-Comment_List: running") //函数已运行
 	//获取userId
 	id, _ := c.Get("userId")
@@ -160,17 +149,11 @@ func Comment_List(c *gin.Context) {
 		return
 	}
 
-	//测试获取了几条数据：
-	//count := len(commentList)
-	//var str string
-	//str = "get comment list" + strconv.Itoa(count) + " success"
-	//log.Println(str)
-
 	//获取评论列表成功
 	c.JSON(http.StatusOK, CommentListResponse{
-		StatusCode:   0,
-		StatusMsg:    "get comment list success",
-		Comment_list: commentList,
+		StatusCode:  0,
+		StatusMsg:   "get comment list success",
+		CommentList: commentList,
 	})
 	log.Println("CommentController-Comment_List: return success") //成功返回列表
 	return
