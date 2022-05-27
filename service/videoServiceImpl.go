@@ -3,13 +3,11 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
-	"bytes"
-	"fmt"
+	"TikTok/middleware"
 	"github.com/jinzhu/copier"
 	"github.com/satori/go.uuid"
 	"log"
 	"mime/multipart"
-	"os/exec"
 	"time"
 )
 
@@ -125,18 +123,14 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	log.Printf("方法dao.VideoFTP(file, videoName) 成功")
 	defer file.Close()
 	//在服务器上执行ffmpeg 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
-	imageName := uuid.NewV4().String() + ".jpg"
+	imageName := uuid.NewV4().String()
 	//"ffmpeg -ss 00:00:01 -i /home/ftpuser/video/"+videoName+".mp4 -vframes 1 /home/ftpuser/images/"+imageName+".jpg"
-	cmdArguments := []string{"-ss", "00:00:01", "-i", "/home/ftpuser/video/" + videoName + ".mp4", "-vframes", "1", "/home/ftpuser/images/" + imageName}
-	cmd := exec.Command("ffmpeg", cmdArguments...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err = cmd.Run()
+	err = middleware.Ffmpeg(videoName, imageName)
 	if err != nil {
-		log.Printf("ffmpeg 出错！！！！")
-		log.Fatal(err)
+		log.Printf("方法middleware.Ffmpeg(videoName, imageName) 失败%v", err)
+		return err
 	}
-	fmt.Printf("command output: %q", out.String())
+	log.Printf("方法middleware.Ffmpeg(videoName, imageName) 成功")
 	//组装并持久化
 	err = dao.Save(videoName, imageName, userId, title)
 	if err != nil {

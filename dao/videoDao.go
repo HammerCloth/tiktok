@@ -105,7 +105,7 @@ func Save(videoName string, imageName string, authorId int64, title string) erro
 	var video TableVideo
 	video.PublishTime = time.Now()
 	video.PlayUrl = config.PlayUrlPrefix + videoName + ".mp4"
-	video.CoverUrl = config.CoverUrlPrefix + imageName
+	video.CoverUrl = config.CoverUrlPrefix + imageName + ".jpg"
 	video.AuthorId = authorId
 	video.Title = title
 	result := Db.Save(&video)
