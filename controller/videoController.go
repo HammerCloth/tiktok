@@ -59,6 +59,7 @@ func Publish(c *gin.Context) {
 		})
 		return
 	}
+
 	videoService := GetVideo()
 	err = videoService.Publish(data, userId, title)
 	if err != nil {
@@ -70,9 +71,10 @@ func Publish(c *gin.Context) {
 		return
 	}
 	log.Printf("方法videoService.Publish(data, userId) 成功")
+
 	c.JSON(http.StatusOK, Response{
 		StatusCode: 0,
-		StatusMsg:  " uploaded successfully",
+		StatusMsg:  "uploaded successfully",
 	})
 }
 

@@ -258,11 +258,11 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 		// 必然是关注情况。
 		users[i].IsFollow = true
 	}
-	go log.Println("从Redis中查询到所有关注者。")
+	log.Println("从Redis中查询到所有关注者。")
 	return users, nil
 }
 
-// 设置Redis关于关注的信息。
+// 设置Redis关于所有关注的信息。
 func setRedisFollowing(userId int64, users []User) {
 	/*
 		1-设置following_userId的所有关注id。
@@ -278,7 +278,7 @@ func setRedisFollowing(userId int64, users []User) {
 			"follow_count":   user.FollowCount,
 			"follower_count": user.FollowerCount,
 		})
-		followingPartId := followingId
+		followingPartId := fmt.Sprintf("following_part_%v", userId)
 		middleware.Rdb.SAdd(middleware.Ctx, followingPartId, user.Id)
 	}
 }
@@ -335,6 +335,40 @@ func getFollowing(userId int64) ([]User, error) {
 
 // GetFollowers 根据当前用户id来查询他的粉丝列表。
 func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
+	// 先查Redis，看是否有全部粉丝信息。
+	followersId := fmt.Sprintf("followers_%v", userId)
+	if cnt, _ := middleware.Rdb.SCard(middleware.Ctx, followersId).Result(); 0 == cnt {
+		users, _ := getFollowers(userId)
+
+		go setRedisFollowers(userId, users)
+
+		return users, nil
+	}
+	// Redis中有。
+	userIds, _ := middleware.Rdb.SMembers(middleware.Ctx, followersId).Result()
+	len := len(userIds)
+	users := make([]User, len)
+	for i := 0; i < len; i++ {
+		userUserId := fmt.Sprintf("user_%v", userIds[i])
+
+		user, _ := middleware.Rdb.HGetAll(middleware.Ctx, userUserId).Result()
+		uid, _ := strconv.Atoi(userIds[i])
+		users[i].Id = int64(uid)
+		users[i].Name = user["name"]
+		cnt, _ := strconv.Atoi(user["follow_count"])
+		users[i].FollowCount = int64(cnt)
+		cnt, _ = strconv.Atoi(user["follower_count"])
+		users[i].FollowerCount = int64(cnt)
+		// 从following_part_#{id}中看是否有关注关系。
+		isFollow, _ := middleware.Rdb.SIsMember(middleware.Ctx, fmt.Sprintf("following_part_%v", userId), userIds[i]).Result()
+		users[i].IsFollow = isFollow
+	}
+	// log.Println("从Redis中查询到所有粉丝们。")
+	return users, nil
+}
+
+// 重数据库查所有粉丝信息。
+func getFollowers(userId int64) ([]User, error) {
 	users := make([]User, 1)
 
 	if err := dao.Db.Raw("select T.id,T.name,T.follow_cnt follow_count,T.follower_cnt follower_count,if(f.cancel is null,'false','true') is_follow"+
@@ -358,4 +392,30 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 	}
 	// 查询成功。
 	return users, nil
+}
+
+// 设置Redis关于所有粉丝的信息
+func setRedisFollowers(userId int64, users []User) {
+	/*
+		1-设置followers_userId的所有粉丝id。
+		2-设置user_userId基本信息。
+		3-设置following_part_id关注信息。
+	*/
+	for _, user := range users {
+		followersId := fmt.Sprintf("followers_%v", userId)
+		middleware.Rdb.SAdd(middleware.Ctx, followersId, user.Id)
+		userUserId := fmt.Sprintf("user_%v", user.Id)
+		middleware.Rdb.HSet(middleware.Ctx, userUserId, map[string]interface{}{
+			"name":           user.Name,
+			"follow_count":   user.FollowCount,
+			"follower_count": user.FollowerCount,
+		})
+		followingPartId := fmt.Sprintf("following_part_%v", user.Id)
+		middleware.Rdb.SAdd(middleware.Ctx, followingPartId, userId)
+
+		if user.IsFollow {
+			followingPartId = fmt.Sprintf("following_part_%v", userId)
+			middleware.Rdb.SAdd(middleware.Ctx, followingPartId, user.Id)
+		}
+	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	// 初始化数据库>
+	// 初始化数据库
 	dao.Init()
 	// 初始化redis-DB0的连接，follow选择的DB0.
 	middleware.InitRedis()
@@ -16,6 +16,9 @@ func main() {
 	middleware.InitRabbitMQ()
 	// 初始化Follow的相关消息队列，并开启消费。
 	middleware.InitFollowRabbitMQ()
+	middleware.InitLikeRabbitMQ()
+	// 初始化FTP服务器链接
+	dao.InitFTP()
 
 	r := gin.Default()
 
