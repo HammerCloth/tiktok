@@ -19,7 +19,7 @@ type UserServiceImpl struct {
 
 // GetTableUserList 获得全部TableUser对象
 func (usi *UserServiceImpl) GetTableUserList() []dao.TableUser {
-	tableUsers, err := dao.NewUserDaoInstance().GetTableUserList()
+	tableUsers, err := dao.GetTableUserList()
 	if err != nil {
 		log.Println("Err:", err.Error())
 		return tableUsers
@@ -29,7 +29,7 @@ func (usi *UserServiceImpl) GetTableUserList() []dao.TableUser {
 
 // GetTableUserByUsername 根据username获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserByUsername(name string) dao.TableUser {
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserByUsername(name)
+	tableUser, err := dao.GetTableUserByUsername(name)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -41,7 +41,7 @@ func (usi *UserServiceImpl) GetTableUserByUsername(name string) dao.TableUser {
 
 // GetTableUserById 根据user_id获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserById(id int64) dao.TableUser {
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -53,7 +53,7 @@ func (usi *UserServiceImpl) GetTableUserById(id int64) dao.TableUser {
 
 // InsertTableUser 将tableUser插入表内
 func (usi *UserServiceImpl) InsertTableUser(tableUser *dao.TableUser) bool {
-	flag := dao.NewUserDaoInstance().InsertTableUser(tableUser)
+	flag := dao.InsertTableUser(tableUser)
 	if flag == false {
 		log.Println("插入失败")
 		return false
@@ -70,7 +70,7 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 		FollowerCount: 0,
 		IsFollow:      false,
 	}
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -104,7 +104,7 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 		FollowerCount: 0,
 		IsFollow:      false,
 	}
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")

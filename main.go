@@ -3,6 +3,7 @@ package main
 import (
 	"TikTok/dao"
 	"TikTok/middleware"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +20,8 @@ func main() {
 	r := gin.Default()
 
 	initRouter(r)
+
+	pprof.Register(r)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 
