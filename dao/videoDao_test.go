@@ -15,7 +15,7 @@ func TestFind(t *testing.T) {
 	var tv TableVideo
 	result := Db.First(&tv)
 	fmt.Println(result.RowsAffected)
-	fmt.Println(tv.ID)
+	fmt.Println(tv.Id)
 	fmt.Println(tv.AuthorId)
 	fmt.Println(tv.CoverUrl)
 	fmt.Println(tv.PlayUrl)
@@ -36,7 +36,7 @@ func TestGetVideosByAuthorId(t *testing.T) {
 
 func TestGetVideoByVideoId(t *testing.T) {
 	Init()
-	data, err := GetVideoByVideoId(1)
+	data, err := GetVideoByVideoId(3)
 	if err != nil {
 		print(err)
 	}

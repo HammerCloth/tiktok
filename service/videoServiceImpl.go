@@ -4,7 +4,6 @@ import (
 	"TikTok/config"
 	"TikTok/dao"
 	"TikTok/middleware"
-	"github.com/jinzhu/copier"
 	"github.com/satori/go.uuid"
 	"log"
 	"mime/multipart"
@@ -56,16 +55,8 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	} else {
 		log.Printf("方法dao.GetVideoByVideoId(videoId) 成功")
 	}
-
-	//将同名字段进行拷贝，如果拷贝失败，说明内部逻辑出现问题，导致的拷贝失败，直接返回一个空的数组，同时返回错误
-	err = copier.Copy(&video, &data)
-	if err != nil {
-		log.Printf("方法copier.Copy(&video, &data) 失败：%v", err)
-		return Video{}, err
-	} else {
-		log.Printf("方法copier.Copy(&video, &data) 成功")
-	}
-
+	//插入从数据库中查到的数据
+	video.TableVideo = data
 	//插入Author，这里需要将视频的发布者和当前登录的用户传入，才能正确获得isFollow，
 	//如果出现错误，不能直接返回失败，将默认值返回，保证稳定
 	video.Author, err = videoService.GetUserByIdWithCurId(data.AuthorId, userId)
@@ -76,7 +67,7 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	}
 
 	//插入点赞数量，同上所示，不将nil直接向上返回，数据没有就算了，给一个默认就行了
-	video.FavoriteCount, err = videoService.FavouriteCount(data.ID)
+	video.FavoriteCount, err = videoService.FavouriteCount(data.Id)
 	if err != nil {
 		log.Printf("方法videoService.FavouriteCount(data.ID) 失败：%v", err)
 	} else {
@@ -84,7 +75,7 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	}
 
 	//获取该视屏的评论数字
-	video.CommentCount, err = videoService.CountFromVideoId(data.ID)
+	video.CommentCount, err = videoService.CountFromVideoId(data.Id)
 	if err != nil {
 		log.Printf("方法videoService.CountFromVideoId(data.ID) 失败：%v", err)
 	} else {
@@ -167,13 +158,7 @@ func (videoService *VideoServiceImpl) List(userId int64, curId int64) ([]Video, 
 func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.TableVideo, userId int64) error {
 	for _, temp := range *data {
 		var video Video
-		//进行拷贝操作
-		err := copier.Copy(&video, &temp)
-		if err != nil {
-			log.Printf("copier.Copy(&video, &temp) 失败：%v", err)
-			return err
-		}
-		log.Println("copier.Copy(&video, &temp) 成功")
+		video.TableVideo = temp
 		//获取对应的user
 		author, err := videoService.GetUserByIdWithCurId(temp.AuthorId, userId)
 		if err != nil {
@@ -182,14 +167,14 @@ func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.Ta
 		log.Println("videoService.GetUserByIdWithCurId(temp.AuthorId, userId) 成功")
 		video.Author = author
 		//获取该视屏的点赞数字
-		likeCount, err := videoService.FavouriteCount(temp.ID)
+		likeCount, err := videoService.FavouriteCount(temp.Id)
 		if err != nil {
 			log.Printf("videoService.FavouriteCount(temp.ID) 失败：%v", err)
 		}
 		log.Printf("videoService.FavouriteCount(temp.ID) 成功")
 		video.FavoriteCount = likeCount
 		//获取该视屏的评论数字
-		commentCount, err := videoService.CountFromVideoId(temp.ID)
+		commentCount, err := videoService.CountFromVideoId(temp.Id)
 		if err != nil {
 			log.Printf("videoService.CountFromVideoId(temp.ID) 失败：%v", err)
 		}

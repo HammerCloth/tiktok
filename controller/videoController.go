@@ -40,7 +40,7 @@ func Feed(c *gin.Context) {
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
 		VideoList: feed,
-		NextTime:  nextTime.Unix(),
+		NextTime:  nextTime.UnixMilli(),
 	})
 }
 

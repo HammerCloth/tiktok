@@ -8,12 +8,12 @@ import (
 )
 
 type TableVideo struct {
-	ID          int64
-	AuthorId    int64 `copier:"-"` //在拷贝时忽略
-	PlayUrl     string
-	CoverUrl    string
-	PublishTime time.Time `copier:"-"` //在拷贝时忽略
-	Title       string    //视频名，5.23添加
+	Id          int64 `json:"id"`
+	AuthorId    int64
+	PlayUrl     string `json:"play_url"`
+	CoverUrl    string `json:"cover_url"`
+	PublishTime time.Time
+	Title       string `json:"title"` //视频名，5.23添加
 }
 
 // TableName
@@ -42,7 +42,7 @@ func GetVideosByAuthorId(authorId int64) ([]TableVideo, error) {
 // 依据VideoId来获得视频信息
 func GetVideoByVideoId(videoId int64) (TableVideo, error) {
 	var tableVideo TableVideo
-	tableVideo.ID = videoId
+	tableVideo.Id = videoId
 	//Init()
 	result := Db.First(&tableVideo)
 	if result.Error != nil {
