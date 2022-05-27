@@ -13,6 +13,7 @@ import (
 
 type LikeMQ struct {
 	RabbitMQ
+	channel   *amqp.Channel
 	queueName string
 	exchange  string
 	key       string
@@ -20,11 +21,14 @@ type LikeMQ struct {
 
 // NewLikeRabbitMQ 获取likeMQ的对应队列。
 func NewLikeRabbitMQ(queueName string) *LikeMQ {
-	return &LikeMQ{
+	likeMQ := &LikeMQ{
 		RabbitMQ:  *Rmq,
 		queueName: queueName,
 	}
-
+	cha, err := likeMQ.conn.Channel()
+	likeMQ.channel = cha
+	Rmq.failOnErr(err, "获取通道失败")
+	return likeMQ
 }
 
 // Publish like操作的发布配置。

@@ -6,15 +6,34 @@ import (
 )
 
 var Ctx = context.Background()
-var Rdb *redis.Client
+var RdbFollowers *redis.Client
+var RdbFollowing *redis.Client
+var RdbUser *redis.Client
+var RdbFollowingPart *redis.Client
+
 var Rdb5 *redis.Client //redis db5
 var Rdb6 *redis.Client //redis db6
 // InitRedis 初始化Redis连接。
 func InitRedis() {
-	Rdb = redis.NewClient(&redis.Options{
+	RdbFollowers = redis.NewClient(&redis.Options{
 		Addr:     "106.14.75.229:6379",
 		Password: "tiktok",
-		DB:       0, // lls 选择将follow相关信息存入 DB0.
+		DB:       0, // 粉丝列表信息存入 DB0.
+	})
+	RdbFollowing = redis.NewClient(&redis.Options{
+		Addr:     "106.14.75.229:6379",
+		Password: "tiktok",
+		DB:       1, // 关注列表信息信息存入 DB1.
+	})
+	RdbUser = redis.NewClient(&redis.Options{
+		Addr:     "106.14.75.229:6379",
+		Password: "tiktok",
+		DB:       2, // 关注列表和粉丝列表中的用具体信息存入 DB2.
+	})
+	RdbFollowingPart = redis.NewClient(&redis.Options{
+		Addr:     "106.14.75.229:6379",
+		Password: "tiktok",
+		DB:       3, // 当前用户是否关注了自己粉丝信息存入 DB1.
 	})
 
 	Rdb5 = redis.NewClient(&redis.Options{

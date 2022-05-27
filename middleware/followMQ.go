@@ -11,6 +11,7 @@ import (
 
 type FollowMQ struct {
 	RabbitMQ
+	channel   *amqp.Channel
 	queueName string
 	exchange  string
 	key       string
@@ -18,11 +19,20 @@ type FollowMQ struct {
 
 // NewFollowRabbitMQ 获取followMQ的对应队列。
 func NewFollowRabbitMQ(queueName string) *FollowMQ {
-	return &FollowMQ{
+	followMQ := &FollowMQ{
 		RabbitMQ:  *Rmq,
 		queueName: queueName,
 	}
 
+	cha, err := followMQ.conn.Channel()
+	followMQ.channel = cha
+	Rmq.failOnErr(err, "获取通道失败")
+	return followMQ
+}
+
+// 关闭mq通道和mq的连接。
+func (f *FollowMQ) destroy() {
+	f.channel.Close()
 }
 
 // Publish follow关系的发布配置。
