@@ -9,8 +9,7 @@ import (
 const MQURL = "amqp://tiktok:tiktok@106.14.75.229:5672/"
 
 type RabbitMQ struct {
-	conn *amqp.Connection
-
+	conn  *amqp.Connection
 	mqurl string
 }
 
