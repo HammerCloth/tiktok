@@ -20,7 +20,7 @@ type CommentService interface {
 	*/
 	// Send
 	// 2、发表评论，传进来评论的基本信息，返回保存是否成功的状态描述
-	Send(comment dao.Comment) error
+	Send(comment dao.Comment) (CommentInfo, error)
 	// DelComment
 	// 3、删除评论，传入评论id即可，返回错误状态信息
 	DelComment(id int64) error

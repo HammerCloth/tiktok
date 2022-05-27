@@ -4,7 +4,6 @@ import (
 	"TikTok/config"
 	"TikTok/dao"
 	"log"
-	"time"
 )
 
 type CommentServiceImpl struct {
@@ -19,7 +18,7 @@ func (c CommentServiceImpl) CountFromVideoId(id int64) (int64, error) {
 
 // Send
 // 2、发表评论
-func (c CommentServiceImpl) Send(comment dao.Comment) error {
+func (c CommentServiceImpl) Send(comment dao.Comment) (CommentInfo, error) {
 	log.Println("CommentService-Send: running") //函数已运行
 	//数据准备
 	var commentInfo dao.Comment
@@ -27,10 +26,29 @@ func (c CommentServiceImpl) Send(comment dao.Comment) error {
 	commentInfo.UserId = comment.UserId           //评论用户id传入
 	commentInfo.CommentText = comment.CommentText //评论内容传入
 	commentInfo.Cancel = config.ValidComment      //评论状态，0，有效
-	//nowTime := time.Now().Format(config.DateTime)
-	commentInfo.CreateDate = time.Now() //评论时间记录
+	commentInfo.CreateDate = comment.CreateDate   //评论时间记录
 
-	return dao.InsertComment(commentInfo)
+	//1.评论信息存储：
+	commentRtn, err := dao.InsertComment(commentInfo)
+	if err != nil {
+		return CommentInfo{}, err
+	}
+	//2.查询用户信息
+	impl := UserServiceImpl{
+		FollowService: &FollowServiceImp{},
+	}
+	userData, err2 := impl.GetUserByIdWithCurId(comment.UserId, comment.UserId)
+	if err2 != nil {
+		return CommentInfo{}, err2
+	}
+	//3.拼接
+	commentData := CommentInfo{
+		Id:         commentRtn.Id,
+		UserInfo:   userData,
+		Content:    commentRtn.CommentText,
+		CreateDate: commentRtn.CreateDate.Format(config.DateTime),
+	}
+	return commentData, nil
 }
 
 // DelComment
