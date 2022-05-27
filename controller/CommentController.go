@@ -7,12 +7,19 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type CommentListResponse struct {
 	StatusCode  int32                 `json:"status_code"`
 	StatusMsg   string                `json:"status_msg,omitempty"`
 	CommentList []service.CommentInfo `json:"comment_list,omitempty"`
+}
+
+type CommentActionResponse struct {
+	StatusCode int32               `json:"status_code"`
+	StatusMsg  string              `json:"status_msg,omitempty"`
+	Comment    service.CommentInfo `json:"comment_list"`
 }
 
 // CommentAction
@@ -27,29 +34,29 @@ func CommentAction(c *gin.Context) {
 	log.Printf("userId:%v", userId)
 	//错误处理
 	if err != nil {
-		c.JSON(http.StatusOK, Response{
+		c.JSON(http.StatusOK, CommentActionResponse{
 			StatusCode: -1,
 			StatusMsg:  "comment userId json invalid",
 		})
-		log.Println("CommentController-Comment_Action: return comment userId json invalid") //函数返回提示错误信息
+		log.Println("CommentController-Comment_Action: return comment userId json invalid") //函数返回userId无效
 		return
 	}
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理
 	if err != nil {
-		c.JSON(http.StatusOK, Response{
+		c.JSON(http.StatusOK, CommentActionResponse{
 			StatusCode: -1,
 			StatusMsg:  "comment videoId json invalid",
 		})
-		log.Println("CommentController-Comment_Action: return comment videoId json invalid") //函数返回提示错误信息
+		log.Println("CommentController-Comment_Action: return comment videoId json invalid") //函数返回视频id无效
 		return
 	}
 	//获取操作类型
 	actionType, err := strconv.ParseInt(c.Query("action_type"), 10, 32)
 	//错误处理
 	if err != nil || actionType < 1 || actionType > 2 {
-		c.JSON(http.StatusOK, Response{
+		c.JSON(http.StatusOK, CommentActionResponse{
 			StatusCode: -1,
 			StatusMsg:  "comment actionType json invalid",
 		})
@@ -64,20 +71,26 @@ func CommentAction(c *gin.Context) {
 		sendComment.UserId = userId
 		sendComment.VideoId = videoId
 		sendComment.CommentText = content
+		timeNow := time.Now()
+		sendComment.CreateDate = timeNow
 		//发表评论
-		if commentService.Send(sendComment) != nil { //发表评论失败
-			c.JSON(http.StatusOK, Response{
+		commentInfo, err := commentService.Send(sendComment)
+		//发表评论失败
+		if err != nil {
+			c.JSON(http.StatusOK, CommentActionResponse{
 				StatusCode: -1,
 				StatusMsg:  "send comment failed",
 			})
-			log.Println("CommentController-Comment_Action: return send comment failed") //删除失败
+			log.Println("CommentController-Comment_Action: return send comment failed") //发表失败
 			return
 		}
 
-		//发表评论成功
-		c.JSON(http.StatusOK, Response{
+		//发表评论成功:
+		//返回结果
+		c.JSON(http.StatusOK, CommentActionResponse{
 			StatusCode: 0,
 			StatusMsg:  "send comment success",
+			Comment:    commentInfo,
 		})
 		log.Println("CommentController-Comment_Action: return Send success") //发表评论成功，返回正确信息
 		return
@@ -85,7 +98,7 @@ func CommentAction(c *gin.Context) {
 		//获取要删除的评论的id
 		commentId, err := strconv.ParseInt(c.Query("comment_id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusOK, Response{
+			c.JSON(http.StatusOK, CommentActionResponse{
 				StatusCode: -1,
 				StatusMsg:  "delete commentId invalid",
 			})
@@ -96,7 +109,7 @@ func CommentAction(c *gin.Context) {
 		err = commentService.DelComment(commentId)
 		if err != nil { //删除评论失败
 			str := err.Error()
-			c.JSON(http.StatusOK, Response{
+			c.JSON(http.StatusOK, CommentActionResponse{
 				StatusCode: -1,
 				StatusMsg:  str,
 			})
@@ -104,7 +117,7 @@ func CommentAction(c *gin.Context) {
 			return
 		}
 		//删除评论成功
-		c.JSON(http.StatusOK, Response{
+		c.JSON(http.StatusOK, CommentActionResponse{
 			StatusCode: 0,
 			StatusMsg:  "delete comment success",
 		})

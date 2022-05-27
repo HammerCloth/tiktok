@@ -40,16 +40,16 @@ func Count(videoId int64) (int64, error) {
 
 // InsertComment
 // 2、发表评论
-func InsertComment(comment Comment) error {
+func InsertComment(comment Comment) (Comment, error) {
 	log.Println("CommentDao-InsertComment: running") //函数已运行
 	//Init()
 	err := Db.Model(Comment{}).Create(&comment).Error
 	if err != nil {
 		log.Println("CommentDao-InsertComment: return create comment failed") //函数返回提示错误信息
-		return errors.New("create comment failed")
+		return Comment{}, errors.New("create comment failed")
 	}
 	log.Println("CommentDao-InsertComment: return success") //函数执行成功，返回正确信息
-	return nil
+	return comment, nil
 }
 
 // DeleteComment
