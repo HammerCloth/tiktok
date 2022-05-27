@@ -17,11 +17,11 @@ type LikeServiceImpl struct {
 // 根据userid,videoid查询点赞信息 这边可以快一点（修改下）判断两个redis
 //Redis是否存在userId set{videoid} 点赞的视频id 功能： 判断是否存在该videoid来判断是否点赞
 func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, error) {
-	suserId := string(userId)
-	svideoId := string(videoId)
+	suserId := strconv.FormatInt(userId, 10)
+	svideoId := strconv.FormatInt(videoId, 10)
 	//step1  如果userid存在 则判断videoid是否存在
 	if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
-		exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, svideoId).Result()
+		exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, videoId).Result()
 		//如果有问题，说明操作redis失败,返回默认false,返回错误信息
 		if err != nil {
 			log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
@@ -30,8 +30,8 @@ func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, erro
 		log.Printf("RedisIsFavourit(videoId) 成功")
 		return exist, nil
 	} else { //如果不存在，则判断redis videoid 是否存在
-		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, suserId).Result(); n > 0 {
-			exist, err := middleware.Rdb6.SIsMember(middleware.Ctx, svideoId, suserId).Result()
+		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
+			exist, err := middleware.Rdb6.SIsMember(middleware.Ctx, svideoId, userId).Result()
 			//如果有问题，说明操作redis失败,返回默认false,返回错误信息
 			if err != nil {
 				log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
@@ -46,9 +46,9 @@ func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, erro
 				return false, err1
 			}
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, likeVideoId)
 			}
-			exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, svideoId).Result()
+			exist, err := middleware.Rdb5.SIsMember(middleware.Ctx, suserId, videoId).Result()
 			//如果有问题，说明操作redis失败,返回默认false,返回错误信息
 			if err != nil {
 				log.Printf("RedisIsFavourit(videoId) 失败：%v", err)
@@ -63,7 +63,7 @@ func (like *LikeServiceImpl) IsFavourit(videoId int64, userId int64) (bool, erro
 //根据videoid获取点赞数量  Redis是否存在videoId set{userid} 点赞的用户id   功能：计算size得到该视频点赞数
 func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 	//查询videoid对应点赞数量
-	svideoId := string(videoId)
+	svideoId := strconv.FormatInt(videoId, 10)
 	//step1 如果videoId存在 则计算点赞userid
 	if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
 		count, err := middleware.Rdb6.SCard(middleware.Ctx, svideoId).Result()
@@ -81,7 +81,7 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 			return 0, err1
 		}
 		for _, likeUserId := range userIdList {
-			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, likeUserId)
 		}
 		count, err := middleware.Rdb6.SCard(middleware.Ctx, svideoId).Result()
 		//如果有问题，说明操作redis失败,返回默认0,返回错误信息
@@ -95,11 +95,13 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 }
 
 func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action_type int32) error {
+	suserId := strconv.FormatInt(userId, 10)
+	svideoId := strconv.FormatInt(videoId, 10)
 	// 加信息打入消息队列。
 	sb := strings.Builder{}
-	sb.WriteString(strconv.Itoa(int(userId)))
+	sb.WriteString(suserId)
 	sb.WriteString(" ")
-	sb.WriteString(strconv.Itoa(int(videoId)))
+	sb.WriteString(svideoId)
 	if action_type == config.Likeaction {
 		middleware.RmqLikeAdd.Publish(sb.String())
 	} else {
@@ -110,61 +112,60 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 		1-Redis是否存在userId set{videoid} 点赞的视频id   功能： 计算size得到用户的喜欢数，用户的喜欢列表
 		2-Redis是否存在videoId set{userid} 点赞的用户id   功能：计算size得到该视频点赞数
 	*/
-	suserId := string(userId)
-	svideoId := string(videoId)
+
 	if action_type == config.Likeaction {
 		//step1  如果userid存在 则加入点赞videoid
 		if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
-			middleware.Rdb5.SAdd(middleware.Ctx, suserId, svideoId)
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, videoId)
 		} else { //如果不存在，则新建key，加入点赞videoid,搜索数据库videoid，然后依次加入
-			middleware.Rdb5.SAdd(middleware.Ctx, suserId, svideoId)
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, videoId)
 			videoIdList, err := dao.GetLikeVideoIdList(userId)
 			if err != nil {
 				return err
 			}
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, likeVideoId)
 			}
 		}
 		//step2  如果videoId存在 则加入点赞userid
 		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
-			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, userId)
 		} else { //如果不存在，则新建key，加入点赞userid,搜索数据库userid，然后依次加入
-			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, userId)
 			userIdList, err := dao.GetLikeUserIdList(videoId)
 			if err != nil {
 				return err
 			}
 			for _, likeUserId := range userIdList {
-				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, likeUserId)
 			}
 		}
 	} else { //取消赞
 		//step1  如果userid存在 则删除点赞videoid
 		if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
-			middleware.Rdb5.SRem(middleware.Ctx, suserId, svideoId)
+			middleware.Rdb5.SRem(middleware.Ctx, suserId, videoId)
 		} else { //如果不存在，则新建key,搜索数据库videoid，然后依次加入,再删除点赞videoid
 			videoIdList, err := dao.GetLikeVideoIdList(userId)
 			if err != nil {
 				return err
 			}
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+				middleware.Rdb5.SAdd(middleware.Ctx, suserId, likeVideoId)
 			}
-			middleware.Rdb5.SRem(middleware.Ctx, suserId, svideoId)
+			middleware.Rdb5.SRem(middleware.Ctx, suserId, videoId)
 		}
 		//step2  如果videoId存在 则删除点赞userid
 		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, svideoId).Result(); n > 0 {
-			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+			middleware.Rdb6.SRem(middleware.Ctx, svideoId, userId)
 		} else { //如果不存在，则新建key,搜索数据库userid，然后依次加入,再删除点赞userid,
 			userIdList, err := dao.GetLikeUserIdList(videoId)
 			if err != nil {
 				return err
 			}
 			for _, likeUserId := range userIdList {
-				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, string(likeUserId))
+				middleware.Rdb6.SAdd(middleware.Ctx, svideoId, likeUserId)
 			}
-			middleware.Rdb6.SAdd(middleware.Ctx, svideoId, suserId)
+			middleware.Rdb6.SRem(middleware.Ctx, svideoId, userId)
 		}
 	}
 	return nil
@@ -173,7 +174,7 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Video, error) {
 	//1.先查询点赞列表信息  Redis是否存在userId set{videoid} 点赞的视频id
 	//功能： 计算size得到用户的喜欢数，用户的喜欢列表
-	suserId := string(userId)
+	suserId := strconv.FormatInt(userId, 10)
 	//step1  如果userid存在 则获取集合中全部videoid
 	if n, _ := middleware.Rdb5.Exists(middleware.Ctx, suserId).Result(); n > 0 {
 		videoIdList, err := middleware.Rdb5.SMembers(middleware.Ctx, suserId).Result()
@@ -207,7 +208,8 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			return nil, err
 		}
 		for _, likeVideoId := range videoIdList {
-			middleware.Rdb5.SAdd(middleware.Ctx, suserId, string(likeVideoId))
+			middleware.Rdb5.SAdd(middleware.Ctx, suserId, likeVideoId)
+			//log.Printf("video_id：%t,%v", string(likeVideoId), string(likeVideoId))
 		}
 		//提前定义好切片长度,生成集合
 		favorite_videolist := make([]Video, 0, len(videoIdList))
