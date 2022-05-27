@@ -160,6 +160,28 @@ func (l *LikeMQ) consumerLikeDel(msgs <-chan amqp.Delivery) {
 				}
 			}
 		}
+		//step1  如果userid存在 则删除点赞videoid
+		if n, _ := Rdb5.Exists(Ctx, params[0]).Result(); n > 0 {
+			//防止出现为空时的脏读
+			exist, err := Rdb5.SIsMember(Ctx, params[0], videoId).Result()
+			if err != nil {
+				log.Printf(err.Error())
+			}
+			if exist {
+				Rdb5.SRem(Ctx, params[0], videoId)
+			}
+		}
+		//step2  如果videoId存在 则删除点赞userid
+		if n, _ := Rdb6.Exists(Ctx, params[1]).Result(); n > 0 {
+			//防止出现为空时的脏读
+			exist, err := Rdb6.SIsMember(Ctx, params[1], userId).Result()
+			if err != nil {
+				log.Printf(err.Error())
+			}
+			if exist {
+				Rdb6.SRem(Ctx, params[1], userId)
+			}
+		}
 	}
 }
 
