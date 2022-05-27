@@ -2,7 +2,6 @@ package dao
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 )
@@ -57,15 +56,15 @@ func TestGetVideosByLastTime(t *testing.T) {
 }
 func TestVideoFtp(t *testing.T) {
 	InitFTP()
-	file, err := os.Open("/Users/siyixiong/Movies/bilibil/bilibil20211219/樱花少女.mp4")
-	if err != nil {
-		panic(err)
-	}
-	err = VideoFTP(file, "k2")
-	if err != nil {
-		return
-	}
-	defer file.Close()
+	//file, err := os.Open("/Users/siyixiong/Movies/bilibil/bilibil20211219/樱花少女.mp4")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//err = VideoFTP(file, "k2")
+	//if err != nil {
+	//	return
+	//}
+	//defer file.Close()
 	//ffmpeg.exe -ss 00:00:01 -i spring.mp4 -vframes 1 bb.jpg
 	//imageName := uuid.NewV4().String() + ".jpg"
 	//cmdArguments := []string{"-ss", "00:00:01", "-i", "/home/ftpuser/video/" + "1" + ".mp4", "-vframes", "1", "/home/ftpuser/images/" + imageName}

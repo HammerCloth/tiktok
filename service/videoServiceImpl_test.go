@@ -26,7 +26,7 @@ func getVideoService2() VideoService {
 
 func TestList(t *testing.T) {
 	videoService := getVideoService2()
-	list, err := videoService.List(3)
+	list, err := videoService.List(3, 2)
 	if err != nil {
 		return
 	}

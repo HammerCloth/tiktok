@@ -19,3 +19,10 @@ const FtpPsw = "424193726"
 // PlayUrlPrefix 存储的图片和视频的链接
 const PlayUrlPrefix = "http://43.138.25.60/"
 const CoverUrlPrefix = "http://43.138.25.60/images/"
+
+// HostSSH SSH配置
+const HostSSH = "43.138.25.60"
+const UserSSH = "ftpuser"
+const PasswordSSH = "424193726"
+const TypeSSH = "password"
+const PortSSH = 22

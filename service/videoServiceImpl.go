@@ -126,6 +126,7 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	defer file.Close()
 	//在服务器上执行ffmpeg 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
 	imageName := uuid.NewV4().String() + ".jpg"
+	//"ffmpeg -ss 00:00:01 -i /home/ftpuser/video/"+videoName+".mp4 -vframes 1 /home/ftpuser/images/"+imageName+".jpg"
 	cmdArguments := []string{"-ss", "00:00:01", "-i", "/home/ftpuser/video/" + videoName + ".mp4", "-vframes", "1", "/home/ftpuser/images/" + imageName}
 	cmd := exec.Command("ffmpeg", cmdArguments...)
 	var out bytes.Buffer
