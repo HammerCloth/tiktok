@@ -116,12 +116,15 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	//在服务器上执行ffmpeg 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
 	imageName := uuid.NewV4().String()
 	//"ffmpeg -ss 00:00:01 -i /home/ftpuser/video/"+videoName+".mp4 -vframes 1 /home/ftpuser/images/"+imageName+".jpg"
-	err = middleware.Ffmpeg(videoName, imageName)
-	if err != nil {
-		log.Printf("方法middleware.Ffmpeg(videoName, imageName) 失败%v", err)
-		return err
+	//err = middleware.Ffmpeg(videoName, imageName)
+	//if err != nil {
+	//	log.Printf("方法middleware.Ffmpeg(videoName, imageName) 失败%v", err)
+	//	return err
+	//}
+	middleware.Ffchan <- middleware.Ffmsg{
+		videoName,
+		imageName,
 	}
-	log.Printf("方法middleware.Ffmpeg(videoName, imageName) 成功")
 	//组装并持久化
 	err = dao.Save(videoName, imageName, userId, title)
 	if err != nil {

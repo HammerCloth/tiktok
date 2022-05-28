@@ -8,6 +8,7 @@ import (
 
 /**
 这里创建队列，用于调用ffmpeg防止因为并发过多而出现问题
+暂时放弃使用队列，决定改用通道来解决这个问题
 */
 
 var VideoChannel *amqp.Channel

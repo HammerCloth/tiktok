@@ -14,7 +14,13 @@ import (
 调用部署在服务器上的ffmpeg，来完成视频截图,并存储在对应位置
 */
 
+type Ffmsg struct {
+	VideoName string
+	ImageName string
+}
+
 var ClientSSH *ssh.Client
+var Ffchan chan Ffmsg
 
 // InitSSH 建立SSH客户端，但是会不会超时导致无法链接，这个需要做一些措施
 func InitSSH() {
@@ -36,6 +42,24 @@ func InitSSH() {
 		log.Fatal("创建ssh client 失败", err)
 	}
 	log.Printf("获取到客户端：%v", ClientSSH)
+	//建立通道，作为队列使用
+	Ffchan = make(chan Ffmsg)
+	//建立携程用于派遣
+	go dispatcher()
+}
+
+//通过增加携程，将获取的信息进行派遣，当信息处理失败之后，还会将处理方式放入通道形成的队列中
+func dispatcher() {
+	for ffmsg := range Ffchan {
+		go func(f Ffmsg) {
+			err := Ffmpeg(f.VideoName, f.ImageName)
+			if err != nil {
+				Ffchan <- f
+				log.Fatal("派遣失败：重新派遣")
+			}
+			log.Printf("%v处理成功", f)
+		}(ffmsg)
+	}
 }
 
 // Ffmpeg 通过远程调用ffmpeg命令来创建视频截图
