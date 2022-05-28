@@ -124,14 +124,14 @@ func (l *LikeMQ) consumerLikeAdd(msgs <-chan amqp.Delivery) {
 			if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
 				likedata.User_id = userId       //插入userid
 				likedata.Video_id = videoId     //插入videoid
-				likedata.Cancel = config.Islike //插入点赞cancel=0
+				likedata.Cancel = config.IsLike //插入点赞cancel=0
 				//如果有问题，说明插入数据库失败，打印错误信息err:"insert data fail"
 				if err := dao.InsertLike(likedata); err != nil {
 					log.Printf(err.Error())
 				}
 			} else { //查到这条数据,更新即可;
 				//如果有问题，说明插入数据库失败，打印错误信息err:"update data fail"
-				if err := dao.UpdateLike(userId, videoId, config.Islike); err != nil {
+				if err := dao.UpdateLike(userId, videoId, config.IsLike); err != nil {
 					log.Printf(err.Error())
 				}
 			}

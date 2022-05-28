@@ -23,12 +23,12 @@ func (Like) TableName() string {
 func GetLikeUserIdList(videoId int64) ([]int64, error) {
 	var likeUserIdList []int64 //存所有该视频点赞用户id；
 	//查询likes表对应视频id点赞用户，返回查询结果
-	err := Db.Model(Like{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.Islike}).
+	err := Db.Model(Like{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.IsLike}).
 		Pluck("user_id", &likeUserIdList).Error
 	//查询过程出现错误，返回默认值0，并输出错误信息
 	if err != nil {
 		log.Println(err.Error())
-		return nil, errors.New("An unknown exception occurred in the query")
+		return nil, errors.New("get likeUserIdList failed")
 	} else {
 		//没查询到或者查询到结果，返回数量以及无报错
 		return likeUserIdList, nil
@@ -87,7 +87,7 @@ func GetLikeInfo(userId int64, videoId int64) (Like, error) {
 //	//创建likeList切片，用来存储查询到的当前用户点赞列表信息
 //	var likeList []Like
 //	//根据userid查询所有点赞视频信息，如果有，存储在likeList切片中,返回查询结果
-//	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.Islike}).
+//	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.IsLike}).
 //		Find(&likeList).Error
 //	if err != nil {
 //		//查询数据为0，返回空likeList切片，以及返回无错误
@@ -106,7 +106,7 @@ func GetLikeInfo(userId int64, videoId int64) (Like, error) {
 //6.根据userid查询所属点赞全部videoid
 func GetLikeVideoIdList(userId int64) ([]int64, error) {
 	var likeVideoIdList []int64
-	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.Islike}).
+	err := Db.Model(Like{}).Where(map[string]interface{}{"user_id": userId, "cancel": config.IsLike}).
 		Pluck("video_id", &likeVideoIdList).Error
 	if err != nil {
 		//查询数据为0，返回空likeVideoIdList切片，以及返回无错误

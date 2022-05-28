@@ -1,12 +1,19 @@
 package service
 
+import "TikTok/dao"
+
 type LikeSub struct {
 }
 
 func (like *LikeSub) GetVideo(videoId int64, userId int64) (Video, error) {
 	if videoId%2 == 1 {
 		return Video{
-			Id: 1,
+			TableVideo: dao.TableVideo{
+				Id:       1,
+				AuthorId: 1,
+				PlayUrl:  "www.baidu.com",
+				CoverUrl: "www.baidu.com",
+			},
 			Author: User{
 				Id:            1,
 				Name:          "lzz",
@@ -14,27 +21,28 @@ func (like *LikeSub) GetVideo(videoId int64, userId int64) (Video, error) {
 				FollowerCount: 13,
 				IsFollow:      true,
 			},
-			PlayUrl:       "www.baidu.com",
-			CoverUrl:      "www.baidu.com",
 			FavoriteCount: 2,
 			CommentCount:  3,
 			IsFavorite:    true,
 		}, nil
 	} else {
 		return Video{
-			Id: 2,
+			TableVideo: dao.TableVideo{
+				Id:       2,
+				AuthorId: 3,
+				PlayUrl:  "www.baidu.com",
+				CoverUrl: "www.baidu11.com",
+			},
 			Author: User{
 				Id:            2,
-				Name:          "lzz2",
-				FollowCount:   11,
-				FollowerCount: 11,
-				IsFollow:      false,
+				Name:          "lzz",
+				FollowCount:   12,
+				FollowerCount: 13,
+				IsFollow:      true,
 			},
-			PlayUrl:       "www.baidu11.com",
-			CoverUrl:      "www.baidu11.com",
-			FavoriteCount: 1,
+			FavoriteCount: 2,
 			CommentCount:  3,
-			IsFavorite:    false,
+			IsFavorite:    true,
 		}, nil
 	}
 
