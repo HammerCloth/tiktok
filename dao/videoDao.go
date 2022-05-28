@@ -70,9 +70,9 @@ func VideoFTP(file io.Reader, videoName string) error {
 	err := MyFTP.Cwd("video")
 	if err != nil {
 		log.Println("转到路径video失败！！！")
-		return err
+	} else {
+		log.Println("转到路径video成功！！！")
 	}
-	log.Println("转到路径video成功！！！")
 	err = MyFTP.Stor(videoName+".mp4", file)
 	if err != nil {
 		log.Println("上传视频失败！！！！！")

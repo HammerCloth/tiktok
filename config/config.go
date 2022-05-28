@@ -26,3 +26,4 @@ const UserSSH = "ftpuser"
 const PasswordSSH = "424193726"
 const TypeSSH = "password"
 const PortSSH = 22
+const MaxMsgCount = 100
