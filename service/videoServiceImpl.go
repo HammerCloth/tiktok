@@ -83,7 +83,7 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	}
 
 	//获取当前用户是否点赞了该视频
-	video.IsFavorite, err = videoService.IsFavourit(video.Id, userId)
+	video.IsFavorite, err = videoService.IsFavourite(video.Id, userId)
 	if err != nil {
 		log.Printf("方法videoService.IsFavourit(video.Id, userId) 失败：%v", err)
 	} else {
@@ -181,13 +181,13 @@ func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.Ta
 		log.Printf("videoService.CountFromVideoId(temp.ID) 成功")
 		video.CommentCount = commentCount
 		//获取当前用户是否点赞了该视频
-		isFavourit, err := videoService.IsFavourit(video.Id, userId)
+		IsFavourite, err := videoService.IsFavourite(video.Id, userId)
 		if err != nil {
 			log.Printf("videoService.IsFavourit(video.Id, userId) 失败：%v", err)
 		} else {
 			log.Printf("videoService.IsFavourit(video.Id, userId) 成功")
 		}
-		video.IsFavorite = isFavourit
+		video.IsFavorite = IsFavourite
 		*result = append(*result, video)
 
 	}
