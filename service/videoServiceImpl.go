@@ -7,6 +7,7 @@ import (
 	"github.com/satori/go.uuid"
 	"log"
 	"mime/multipart"
+	"sync"
 	"time"
 )
 
@@ -43,7 +44,6 @@ func (videoService VideoServiceImpl) Feed(lastTime time.Time, userId int64) ([]V
 // GetVideo
 // 传入视频id获得对应的视频对象，注意还需要传入当前登录用户id
 func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Video, error) {
-
 	//初始化video对象
 	var video Video
 
@@ -55,41 +55,9 @@ func (videoService *VideoServiceImpl) GetVideo(videoId int64, userId int64) (Vid
 	} else {
 		log.Printf("方法dao.GetVideoByVideoId(videoId) 成功")
 	}
+
 	//插入从数据库中查到的数据
-	video.TableVideo = data
-	//插入Author，这里需要将视频的发布者和当前登录的用户传入，才能正确获得isFollow，
-	//如果出现错误，不能直接返回失败，将默认值返回，保证稳定
-	video.Author, err = videoService.GetUserByIdWithCurId(data.AuthorId, userId)
-	if err != nil {
-		log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 失败：%v", err)
-	} else {
-		log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 成功")
-	}
-
-	//插入点赞数量，同上所示，不将nil直接向上返回，数据没有就算了，给一个默认就行了
-	video.FavoriteCount, err = videoService.FavouriteCount(data.Id)
-	if err != nil {
-		log.Printf("方法videoService.FavouriteCount(data.ID) 失败：%v", err)
-	} else {
-		log.Printf("方法videoService.FavouriteCount(data.ID) 成功")
-	}
-
-	//获取该视屏的评论数字
-	video.CommentCount, err = videoService.CountFromVideoId(data.Id)
-	if err != nil {
-		log.Printf("方法videoService.CountFromVideoId(data.ID) 失败：%v", err)
-	} else {
-		log.Printf("方法videoService.CountFromVideoId(data.ID) 成功")
-	}
-
-	//获取当前用户是否点赞了该视频
-	video.IsFavorite, err = videoService.IsFavourite(video.Id, userId)
-	if err != nil {
-		log.Printf("方法videoService.IsFavourit(video.Id, userId) 失败：%v", err)
-	} else {
-		log.Printf("方法videoService.IsFavourit(video.Id, userId) 成功")
-	}
-
+	videoService.creatVideo(&video, &data, userId)
 	return video, nil
 }
 
@@ -156,38 +124,64 @@ func (videoService *VideoServiceImpl) List(userId int64, curId int64) ([]Video, 
 func (videoService *VideoServiceImpl) copyVideos(result *[]Video, data *[]dao.TableVideo, userId int64) error {
 	for _, temp := range *data {
 		var video Video
-		video.TableVideo = temp
-		//获取对应的user
-		author, err := videoService.GetUserByIdWithCurId(temp.AuthorId, userId)
-		if err != nil {
-			log.Printf("videoService.GetUserByIdWithCurId(%v, %v) 失败：%v", temp.AuthorId, userId, err)
-		}
-		log.Println("videoService.GetUserByIdWithCurId(temp.AuthorId, userId) 成功")
-		video.Author = author
-		//获取该视屏的点赞数字
-		likeCount, err := videoService.FavouriteCount(temp.Id)
-		if err != nil {
-			log.Printf("videoService.FavouriteCount(temp.ID) 失败：%v", err)
-		}
-		log.Printf("videoService.FavouriteCount(temp.ID) 成功")
-		video.FavoriteCount = likeCount
-		//获取该视屏的评论数字
-		commentCount, err := videoService.CountFromVideoId(temp.Id)
-		if err != nil {
-			log.Printf("videoService.CountFromVideoId(temp.ID) 失败：%v", err)
-		}
-		log.Printf("videoService.CountFromVideoId(temp.ID) 成功")
-		video.CommentCount = commentCount
-		//获取当前用户是否点赞了该视频
-		IsFavourite, err := videoService.IsFavourite(video.Id, userId)
-		if err != nil {
-			log.Printf("videoService.IsFavourit(video.Id, userId) 失败：%v", err)
-		} else {
-			log.Printf("videoService.IsFavourit(video.Id, userId) 成功")
-		}
-		video.IsFavorite = IsFavourite
+		//将video进行组装，添加想要的信息,插入从数据库中查到的数据
+		videoService.creatVideo(&video, &temp, userId)
 		*result = append(*result, video)
-
 	}
 	return nil
+}
+
+//将video进行组装，添加想要的信息,插入从数据库中查到的数据
+func (videoService *VideoServiceImpl) creatVideo(video *Video, data *dao.TableVideo, userId int64) {
+	//建立协程组，当这一组的携程全部完成后，才会结束本方法
+	var wg sync.WaitGroup
+	wg.Add(4)
+	var err error
+	video.TableVideo = *data
+	//插入Author，这里需要将视频的发布者和当前登录的用户传入，才能正确获得isFollow，
+	//如果出现错误，不能直接返回失败，将默认值返回，保证稳定
+	go func() {
+		video.Author, err = videoService.GetUserByIdWithCurId(data.AuthorId, userId)
+		if err != nil {
+			log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 失败：%v", err)
+		} else {
+			log.Printf("方法videoService.GetUserByIdWithCurId(data.AuthorId, userId) 成功")
+		}
+		wg.Done()
+	}()
+
+	//插入点赞数量，同上所示，不将nil直接向上返回，数据没有就算了，给一个默认就行了
+	go func() {
+		video.FavoriteCount, err = videoService.FavouriteCount(data.Id)
+		if err != nil {
+			log.Printf("方法videoService.FavouriteCount(data.ID) 失败：%v", err)
+		} else {
+			log.Printf("方法videoService.FavouriteCount(data.ID) 成功")
+		}
+		wg.Done()
+	}()
+
+	//获取该视屏的评论数字
+	go func() {
+		video.CommentCount, err = videoService.CountFromVideoId(data.Id)
+		if err != nil {
+			log.Printf("方法videoService.CountFromVideoId(data.ID) 失败：%v", err)
+		} else {
+			log.Printf("方法videoService.CountFromVideoId(data.ID) 成功")
+		}
+		wg.Done()
+	}()
+
+	//获取当前用户是否点赞了该视频
+	go func() {
+		video.IsFavorite, err = videoService.IsFavourite(video.Id, userId)
+		if err != nil {
+			log.Printf("方法videoService.IsFavourit(video.Id, userId) 失败：%v", err)
+		} else {
+			log.Printf("方法videoService.IsFavourit(video.Id, userId) 成功")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
