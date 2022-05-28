@@ -121,6 +121,8 @@ func CommentAction(c *gin.Context) {
 			StatusCode: 0,
 			StatusMsg:  "delete comment success",
 		})
+		//更新redis
+		go service.DelCommentFormRedis(videoId, commentId)
 		log.Println("CommentController-Comment_Action: return delete success") //函数执行成功，返回正确信息
 		return
 	}
@@ -152,7 +154,8 @@ func CommentList(c *gin.Context) {
 
 	//调用service层评论函数
 	commentService := new(service.CommentServiceImpl)
-	commentList, err := commentService.GetList(videoId, userId)
+	//commentList, err := commentService.GetList(videoId, userId)
+	commentList, err := commentService.GetListFromRedis(videoId, userId)
 	if err != nil { //获取评论列表失败
 		c.JSON(http.StatusOK, CommentListResponse{
 			StatusCode: -1,
