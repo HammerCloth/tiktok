@@ -13,6 +13,10 @@ var RdbFollowingPart *redis.Client
 
 var RdbLikeUserId *redis.Client  //key:userId,value:VideoId
 var RdbLikeVideoId *redis.Client //key:VideoId,value:userId
+
+var RdbVCid *redis.Client  //redis db11 -- Video_id + comment_id
+var RdbCInfo *redis.Client //redis db12 -- Comment_id + commentInfo
+
 // InitRedis 初始化Redis连接。
 func InitRedis() {
 	RdbFollowers = redis.NewClient(&redis.Options{
@@ -46,6 +50,17 @@ func InitRedis() {
 		Addr:     "106.14.75.229:6379",
 		Password: "tiktok",
 		DB:       6, //  选择将点赞用户id信息存入 DB6.
+	})
+	RdbVCid = redis.NewClient(&redis.Options{
+		Addr:     "106.14.75.229:6379",
+		Password: "tiktok",
+		DB:       11, // lsy 选择将video_id中的评论id存入 DB11.
+	})
+
+	RdbCInfo = redis.NewClient(&redis.Options{
+		Addr:     "106.14.75.229:6379",
+		Password: "tiktok",
+		DB:       12, // lsy 选择将Comment相关信息存入 DB12.
 	})
 
 }

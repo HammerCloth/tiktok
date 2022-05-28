@@ -60,6 +60,7 @@ func (c *CommentMQ) CommentPublish(body string) {
 
 // CommentConsumer Comment关系的消费逻辑。
 func (c *CommentMQ) CommentConsumer() {
+	log.Println("CommentConsumer running")
 	//QueueDeclare声明一个队列来保存消息并传递给使用者。如果队列不存在，则声明将创建队列，或确保现有队列与相同的参数匹配.
 	_, err := c.channel.QueueDeclare(c.queueName, false, false, false, false, nil)
 	if err != nil {
@@ -67,7 +68,7 @@ func (c *CommentMQ) CommentConsumer() {
 	}
 
 	//2、接收消息
-	msgs, err := c.channel.Consume(c.queueName, "", true, false, false, false, nil)
+	msg, err := c.channel.Consume(c.queueName, "", true, false, false, false, nil)
 	if err != nil {
 		//panic(err)
 		log.Println(err)
@@ -75,18 +76,18 @@ func (c *CommentMQ) CommentConsumer() {
 
 	commentChan := make(chan bool)
 	switch c.queueName {
-	case "follow_add":
-		go c.consumerCommentAdd(msgs)
-	case "follow_del":
-		go c.consumerCommentDel(msgs)
-
+	case "comment_add":
+		go c.consumerCommentAdd(msg)
+	case "comment_del":
+		go c.consumerCommentDel(msg)
 	}
-	log.Printf("[*] Waiting for messagees,To exit press CTRL+C")
+	//log.Printf("[*] Waiting for messages,To exit press CTRL+C")
 	<-commentChan
 }
 
 // 消费，评论添加-在redis中添加评论相关信息，共5个信息。
 func (c *CommentMQ) consumerCommentAdd(messages <-chan amqp.Delivery) {
+	log.Println("consumerCommentAdd running")
 	for msg := range messages {
 		// 参数解析。
 		params := strings.Split(fmt.Sprintf("%s", msg.Body), " ")
