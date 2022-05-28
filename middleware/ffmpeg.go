@@ -42,8 +42,8 @@ func InitSSH() {
 		log.Fatal("创建ssh client 失败", err)
 	}
 	log.Printf("获取到客户端：%v", ClientSSH)
-	//建立通道，作为队列使用
-	Ffchan = make(chan Ffmsg)
+	//建立通道，作为队列使用,并且确立缓冲区大小
+	Ffchan = make(chan Ffmsg, config.MaxMsgCount)
 	//建立携程用于派遣
 	go dispatcher()
 }
@@ -57,7 +57,7 @@ func dispatcher() {
 				Ffchan <- f
 				log.Fatal("派遣失败：重新派遣")
 			}
-			log.Printf("%v处理成功", f)
+			log.Printf("视频%v截图处理成功", f.VideoName)
 		}(ffmsg)
 	}
 }
