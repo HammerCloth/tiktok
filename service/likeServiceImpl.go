@@ -15,91 +15,91 @@ type LikeServiceImpl struct {
 }
 
 //IsFavourite 根据userId,videoId查询点赞状态 这边可以快一点,通过查询两个Redis DB;
-//step1：查询Redis DB5(key:strUserId)是否已经加载过此信息，通过是否存在value:videoId 判断点赞状态;
-//step2:如DB5没有对应信息，查询DB6(key：strVideoId)是否已经加载过此信息，通过是否存在value:userId 判断点赞状态;
-//step3:DB5 DB6中都没有对应key,维护DB5对应key，并通过查询key：strUserId中是否存在value:videoId 判断点赞状态;
+//step1：查询Redis LikeUserId(key:strUserId)是否已经加载过此信息，通过是否存在value:videoId 判断点赞状态;
+//step2:如LikeUserId没有对应信息，查询LikeVideoId(key：strVideoId)是否已经加载过此信息，通过是否存在value:userId 判断点赞状态;
+//step3:LikeUserId LikeVideoId中都没有对应key,维护LikeUserId对应key，并通过查询key：strUserId中是否存在value:videoId 判断点赞状态;
 func (like *LikeServiceImpl) IsFavourite(videoId int64, userId int64) (bool, error) {
 	//将int64 userId转换为 string strUserId
 	strUserId := strconv.FormatInt(userId, 10)
 	//将int64 videoId转换为 string strVideoId
 	strVideoId := strconv.FormatInt(videoId, 10)
-	//step1:查询Redis DB5,key：strUserId中是否存在value:videoId,key中存在value 返回true，不存在返回false
-	if n, err := middleware.Rdb5.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
+	//step1:查询Redis LikeUserId,key：strUserId中是否存在value:videoId,key中存在value 返回true，不存在返回false
+	if n, err := middleware.RdbLikeUserId.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
 		//如果有问题，说明查询redis失败,返回默认false,返回错误信息
 		if err != nil {
-			log.Printf("方法:IsFavourite RedisDB5 query key失败：%v", err)
+			log.Printf("方法:IsFavourite RedisLikeUserId query key失败：%v", err)
 			return false, err
 		}
-		exist, err1 := middleware.Rdb5.SIsMember(middleware.Ctx, strUserId, videoId).Result()
+		exist, err1 := middleware.RdbLikeUserId.SIsMember(middleware.Ctx, strUserId, videoId).Result()
 		//如果有问题，说明查询redis失败,返回默认false,返回错误信息
 		if err1 != nil {
-			log.Printf("方法:IsFavourite RedisDB5 query value失败：%v", err1)
+			log.Printf("方法:IsFavourite RedisLikeUserId query value失败：%v", err1)
 			return false, err1
 		}
-		log.Printf("方法:IsFavourite RedisDB5 query value成功")
+		log.Printf("方法:IsFavourite RedisLikeUserId query value成功")
 		return exist, nil
-	} else { //step2:DB5不存在key,查询Redis DB6,key中存在value 返回true，不存在返回false
-		if n, err := middleware.Rdb6.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
+	} else { //step2:LikeUserId不存在key,查询Redis LikeVideoId,key中存在value 返回true，不存在返回false
+		if n, err := middleware.RdbLikeVideoId.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
 			//如果有问题，说明查询redis失败,返回默认false,返回错误信息
 			if err != nil {
-				log.Printf("方法:IsFavourite RedisDB6 query key失败：%v", err)
+				log.Printf("方法:IsFavourite RedisLikeVideoId query key失败：%v", err)
 				return false, err
 			}
-			exist, err1 := middleware.Rdb6.SIsMember(middleware.Ctx, strVideoId, userId).Result()
+			exist, err1 := middleware.RdbLikeVideoId.SIsMember(middleware.Ctx, strVideoId, userId).Result()
 			//如果有问题，说明查询redis失败,返回默认false,返回错误信息
 			if err1 != nil {
-				log.Printf("方法:IsFavourite RedisDB6 query value失败：%v", err1)
+				log.Printf("方法:IsFavourite RedisLikeVideoId query value失败：%v", err1)
 				return false, err1
 			}
-			log.Printf("方法:IsFavourite RedisDB6 query value成功")
+			log.Printf("方法:IsFavourite RedisLikeVideoId query value成功")
 			return exist, nil
-		} else { //step3:DB5 DB6中都没有对应key，通过userId查询likes表,返回所有点赞videoId，并维护到Redis DB5(key:strUserId)
+		} else { //step3:LikeUserId LikeVideoId中都没有对应key，通过userId查询likes表,返回所有点赞videoId，并维护到Redis LikeUserId(key:strUserId)
 			videoIdList, err := dao.GetLikeVideoIdList(userId)
 			//如果有问题，说明查询数据库失败，返回默认false,返回错误信息："get likeVideoIdList failed"
 			if err != nil {
 				log.Printf(err.Error())
 				return false, err
 			}
-			//维护Redis DB5(key:strUserId)，遍历videoIdList加入
+			//维护Redis LikeUserId(key:strUserId)，遍历videoIdList加入
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, strUserId, likeVideoId)
+				middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, likeVideoId)
 			}
-			//查询Redis DB5,key：strUserId中是否存在value:videoId,存在返回true,不存在返回false
-			exist, err1 := middleware.Rdb5.SIsMember(middleware.Ctx, strUserId, videoId).Result()
+			//查询Redis LikeUserId,key：strUserId中是否存在value:videoId,存在返回true,不存在返回false
+			exist, err1 := middleware.RdbLikeUserId.SIsMember(middleware.Ctx, strUserId, videoId).Result()
 			//如果有问题，说明操作redis失败,返回默认false,返回错误信息
 			if err1 != nil {
-				log.Printf("方法:IsFavourite RedisDB5 query value失败：%v", err1)
+				log.Printf("方法:IsFavourite RedisLikeUserId query value失败：%v", err1)
 				return false, err1
 			}
-			log.Printf("方法:IsFavourite RedisDB5 query value成功")
+			log.Printf("方法:IsFavourite RedisLikeUserId query value成功")
 			return exist, nil
 		}
 	}
 }
 
 //FavouriteCount 根据videoId获取对应点赞数量;
-//step1：查询Redis DB6(key:strVideoId)是否已经加载过此信息，通过set集合中userId个数，获取点赞数量;
-//step2：DB6中都没有对应key，维护DB6对应key，再通过set集合中userId个数，获取点赞数量;
+//step1：查询Redis LikeVideoId(key:strVideoId)是否已经加载过此信息，通过set集合中userId个数，获取点赞数量;
+//step2：LikeVideoId中都没有对应key，维护LikeVideoId对应key，再通过set集合中userId个数，获取点赞数量;
 func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 	//将int64 videoId转换为 string strVideoId
 	strVideoId := strconv.FormatInt(videoId, 10)
 	//step1 如果key:strVideoId存在 则计算集合中userId个数
-	if n, err := middleware.Rdb6.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
+	if n, err := middleware.RdbLikeVideoId.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
 		//如果有问题，说明查询redis失败,返回默认false,返回错误信息
 		if err != nil {
-			log.Printf("方法:FavouriteCount RedisDB6 query key失败：%v", err)
+			log.Printf("方法:FavouriteCount RedisLikeVideoId query key失败：%v", err)
 			return 0, err
 		}
 		//获取集合中userId个数
-		count, err1 := middleware.Rdb6.SCard(middleware.Ctx, strVideoId).Result()
+		count, err1 := middleware.RdbLikeVideoId.SCard(middleware.Ctx, strVideoId).Result()
 		//如果有问题，说明操作redis失败,返回默认0,返回错误信息
 		if err1 != nil {
-			log.Printf("方法:FavouriteCount RedisDB6 query count 失败：%v", err1)
+			log.Printf("方法:FavouriteCount RedisLikeVideoId query count 失败：%v", err1)
 			return 0, err1
 		}
-		log.Printf("方法:FavouriteCount RedisDB6 query count 成功")
+		log.Printf("方法:FavouriteCount RedisLikeVideoId query count 成功")
 		return count, nil
-	} else { //如果Redis DB6不存在此key,通过videoId查询likes表,返回所有点赞userId，并维护到Redis DB6(key:strVideoId)
+	} else { //如果Redis LikeVideoId不存在此key,通过videoId查询likes表,返回所有点赞userId，并维护到Redis LikeVideoId(key:strVideoId)
 		//再通过set集合中userId个数,获取点赞数量
 		userIdList, err := dao.GetLikeUserIdList(videoId)
 		//如果有问题，说明查询数据库失败，返回默认0,返回错误信息："get likeUserIdList failed"
@@ -107,25 +107,25 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 			log.Printf(err.Error())
 			return 0, err
 		}
-		//维护Redis DB6(key:strVideoId)，遍历userIdList加入
+		//维护Redis LikeVideoId(key:strVideoId)，遍历userIdList加入
 		for _, likeUserId := range userIdList {
-			middleware.Rdb6.SAdd(middleware.Ctx, strVideoId, likeUserId)
+			middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, likeUserId)
 		}
 		//再通过set集合中userId个数,获取点赞数量
-		count, err1 := middleware.Rdb6.SCard(middleware.Ctx, strVideoId).Result()
+		count, err1 := middleware.RdbLikeVideoId.SCard(middleware.Ctx, strVideoId).Result()
 		//如果有问题，说明操作redis失败,返回默认0,返回错误信息
 		if err1 != nil {
-			log.Printf("方法:FavouriteCount RedisDB6 query count 失败：%v", err1)
+			log.Printf("方法:FavouriteCount RedisLikeVideoId query count 失败：%v", err1)
 			return 0, err
 		}
-		log.Printf("方法:FavouriteCount RedisDB6 query count 成功")
+		log.Printf("方法:FavouriteCount RedisLikeVideoId query count 成功")
 		return count, nil
 	}
 }
 
 // FavouriteAction 根据userId，videoId,actionType对视频进行点赞或者取消赞操作;
 //step1：更新数据库likes表;
-//step2: 维护Redis DB5(key:strUserId),添加或者删除value:videoId,DB6(key:strVideoId),添加或者删除value:userId;
+//step2: 维护Redis LikeUserId(key:strUserId),添加或者删除value:videoId,LikeVideoId(key:strVideoId),添加或者删除value:userId;
 func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, actionType int32) error {
 	//将int64 videoId转换为 string strVideoId
 	strUserId := strconv.FormatInt(userId, 10)
@@ -137,96 +137,196 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 	sb.WriteString(strUserId)
 	sb.WriteString(" ")
 	sb.WriteString(strVideoId)
-	//如果是点赞操作，消息打入RmqLikeAdd队列
-	if actionType == config.LikeAction {
-		middleware.RmqLikeAdd.Publish(sb.String())
-	} else { //如果是取消赞操作，消息打入RmqLikeDel队列
-		middleware.RmqLikeDel.Publish(sb.String())
-	}
 
-	//step2:维护Redis DB5、DB6;
+	//step2:维护Redis LikeUserId、LikeVideoId;
 	//执行点赞操作维护
 	if actionType == config.LikeAction {
-		//查询Redis DB5(key:strUserId)是否已经加载过此信息
-		if n, err := middleware.Rdb5.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
-			//如果有问题，说明查询redis失败,返回默认false,返回错误信息
+		//查询Redis LikeUserId(key:strUserId)是否已经加载过此信息
+		if n, err := middleware.RdbLikeUserId.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
+			//如果有问题，说明查询redis失败,返回错误信息
 			if err != nil {
-				log.Printf("方法:FavouriteAction RedisDB5 query key失败：%v", err)
+				log.Printf("方法:FavouriteAction RedisLikeUserId query key失败：%v", err)
 				return err
-			} //
-			middleware.Rdb5.SAdd(middleware.Ctx, strUserId, videoId)
-		} else { //如果不存在，则新建key，加入点赞videoid,搜索数据库videoid，然后依次加入
-			middleware.Rdb5.SAdd(middleware.Ctx, strUserId, videoId)
+			} //如果加载过此信息key:strUserId，则加入value:videoId
+			//如果redis LikeUserId 添加失败，数据库操作成功，会有脏数据，所以只有redis操作成功才执行数据库likes表操作
+			if _, err1 := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, videoId).Result(); err1 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeUserId add value失败：%v", err1)
+				return err1
+			} else {
+				//如果数据库操作失败了，redis是正确数据，客户端显示的是点赞成功，不会影响后续结果
+				//只有当该用户取消所有点赞视频的时候redis才会重新加载数据库信息，这时候因为取消赞了必然和数据库信息一致
+				//同样这条信息消费成功与否也不重要，因为redis是正确信息,理由如上
+				middleware.RmqLikeAdd.Publish(sb.String())
+			}
+		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId
+			//通过userId查询likes表,返回所有点赞videoId，加入key:strUserId集合中,
+			//再加入当前videoId,再更新likes表此条数据
 			videoIdList, err := dao.GetLikeVideoIdList(userId)
+			//如果有问题，说明查询失败，返回错误信息："get likeVideoIdList failed"
 			if err != nil {
 				return err
 			}
+			//遍历videoIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
+			//保证redis与mysql数据一致性
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, strUserId, likeVideoId)
+				if _, err1 := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, likeVideoId).Result(); err1 != nil {
+					log.Printf("方法:FavouriteAction RedisLikeUserId add value失败")
+					middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
+					return err1
+				}
+			}
+			//这样操作理由同上
+			if _, err2 := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, videoId).Result(); err2 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeUserId add value失败：%v", err2)
+				return err2
+			} else {
+				middleware.RmqLikeAdd.Publish(sb.String())
 			}
 		}
-		//step2  如果videoId存在 则加入点赞userid
-		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
-			middleware.Rdb6.SAdd(middleware.Ctx, strVideoId, userId)
-		} else { //如果不存在，则新建key，加入点赞userid,搜索数据库userid，然后依次加入
-			middleware.Rdb6.SAdd(middleware.Ctx, strVideoId, userId)
+		//查询Redis LikeVideoId(key:strVideoId)是否已经加载过此信息
+		if n, err := middleware.RdbLikeVideoId.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
+			//如果有问题，说明查询redis失败,返回错误信息
+			if err != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId query key失败：%v", err)
+				return err
+			} //如果加载过此信息key:strVideoId，则加入value:userId
+			//如果redis LikeVideoId 添加失败，数据库操作成功，会有脏数据，所以只有redis操作成功才执行数据库likes表操作
+			if _, err1 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, userId).Result(); err1 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败：%v", err1)
+				return err1
+			} else {
+				//如果数据库操作失败了，redis是正确数据，客户端显示的是点赞成功，不会影响后续结果
+				//只有所有用户取消该视频点赞的时候redis才会重新加载数据库信息，这时候因为取消赞了必然和数据库信息一致
+				//同样这条信息发布成功与否也不重要，因为redis是正确信息,理由如上
+				middleware.RmqLikeAdd.Publish(sb.String())
+			}
+		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId
+			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
+			//再加入当前userId,再更新likes表此条数据
 			userIdList, err := dao.GetLikeUserIdList(videoId)
+			//如果有问题，说明查询失败，返回错误信息："get likeUserIdList failed"
 			if err != nil {
 				return err
 			}
+			//遍历userIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
+			//保证redis与mysql数据一致性
 			for _, likeUserId := range userIdList {
-				middleware.Rdb6.SAdd(middleware.Ctx, strVideoId, likeUserId)
+				if _, err1 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, likeUserId).Result(); err1 != nil {
+					log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败")
+					middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
+					return err1
+				}
+			}
+			//这样操作理由同上
+			if _, err2 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, userId).Result(); err2 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败：%v", err2)
+				return err2
+			} else {
+				middleware.RmqLikeAdd.Publish(sb.String())
 			}
 		}
-	} else { //取消赞
-		//step1  如果userid存在 则删除点赞videoid
-		if n, _ := middleware.Rdb5.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
-			middleware.Rdb5.SRem(middleware.Ctx, strUserId, videoId)
-		} else { //如果不存在，则新建key,搜索数据库videoid，然后依次加入,再删除点赞videoid
+	} else { //执行取消赞操作维护
+		//查询Redis LikeUserId(key:strUserId)是否已经加载过此信息
+		if n, err := middleware.RdbLikeUserId.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
+			//如果有问题，说明查询redis失败,返回错误信息
+			if err != nil {
+				log.Printf("方法:FavouriteAction RedisLikeUserId query key失败：%v", err)
+				return err
+			} //防止出现redis数据不一致情况，当redis删除操作成功，才执行数据库更新操作
+			if _, err1 := middleware.RdbLikeUserId.SRem(middleware.Ctx, strUserId, videoId).Result(); err1 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeUserId del value失败：%v", err1)
+				return err1
+			} else {
+				//后续数据库的操作，可以在mq里设置若执行数据库更新操作失败，重新消费该信息
+				middleware.RmqLikeDel.Publish(sb.String())
+			}
+		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId
+			//通过userId查询likes表,返回所有点赞videoId，加入key:strUserId集合中,
+			//再删除当前videoId,再更新likes表此条数据
 			videoIdList, err := dao.GetLikeVideoIdList(userId)
+			//如果有问题，说明查询失败，返回错误信息："get likeVideoIdList failed"
 			if err != nil {
 				return err
 			}
+			//遍历videoIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
+			//保证redis与mysql数据一致性
 			for _, likeVideoId := range videoIdList {
-				middleware.Rdb5.SAdd(middleware.Ctx, strUserId, likeVideoId)
+				if _, err1 := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, likeVideoId).Result(); err1 != nil {
+					log.Printf("方法:FavouriteAction RedisLikeUserId add value失败")
+					middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
+					return err1
+				}
 			}
-			middleware.Rdb5.SRem(middleware.Ctx, strUserId, videoId)
+			//这样操作理由同上
+			if _, err2 := middleware.RdbLikeUserId.SRem(middleware.Ctx, strUserId, videoId).Result(); err2 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeUserId del value失败：%v", err2)
+				return err2
+			} else {
+				middleware.RmqLikeDel.Publish(sb.String())
+			}
 		}
-		//step2  如果videoId存在 则删除点赞userid
-		if n, _ := middleware.Rdb6.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
-			middleware.Rdb6.SRem(middleware.Ctx, strVideoId, userId)
-		} else { //如果不存在，则新建key,搜索数据库userid，然后依次加入,再删除点赞userid,
+
+		//查询Redis LikeVideoId(key:strVideoId)是否已经加载过此信息
+		if n, err := middleware.RdbLikeVideoId.Exists(middleware.Ctx, strVideoId).Result(); n > 0 {
+			//如果有问题，说明查询redis失败,返回错误信息
+			if err != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId query key失败：%v", err)
+				return err
+			} //如果加载过此信息key:strVideoId，则删除value:userId
+			//如果redis LikeVideoId 删除失败，数据库操作成功，会有脏数据，所以只有redis操作成功才执行数据库likes表操作
+			if _, err1 := middleware.RdbLikeVideoId.SRem(middleware.Ctx, strVideoId, userId).Result(); err1 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId del value失败：%v", err1)
+				return err1
+			} else {
+				middleware.RmqLikeDel.Publish(sb.String())
+			}
+		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId
+			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
+			//再删除当前userId,再更新likes表此条数据
 			userIdList, err := dao.GetLikeUserIdList(videoId)
+			//如果有问题，说明查询失败，返回错误信息："get likeUserIdList failed"
 			if err != nil {
 				return err
 			}
+			//遍历userIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
+			//保证redis与mysql数据一致性
 			for _, likeUserId := range userIdList {
-				middleware.Rdb6.SAdd(middleware.Ctx, strVideoId, likeUserId)
+				if _, err1 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, likeUserId).Result(); err1 != nil {
+					log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败")
+					middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
+					return err1
+				}
 			}
-			middleware.Rdb6.SRem(middleware.Ctx, strVideoId, userId)
+			//这样操作理由同上
+			if _, err2 := middleware.RdbLikeVideoId.SRem(middleware.Ctx, strVideoId, userId).Result(); err2 != nil {
+				log.Printf("方法:FavouriteAction RedisLikeVideoId del value失败：%v", err2)
+				return err2
+			} else {
+				middleware.RmqLikeDel.Publish(sb.String())
+			}
 		}
 	}
 	return nil
 }
 
 //GetFavouriteList 根据userId，curId(当前用户Id),返回userId的点赞列表;
-//step1：查询Redis DB5(key:strUserId)是否已经加载过此信息，获取集合中全部videoId，并添加到点赞列表集合中;
-//step2：DB5中都没有对应key，维护DB5对应key，同时添加到点赞列表集合中;
+//step1：查询Redis LikeUserId(key:strUserId)是否已经加载过此信息，获取集合中全部videoId，并添加到点赞列表集合中;
+//step2：LikeUserId中都没有对应key，维护LikeUserId对应key，同时添加到点赞列表集合中;
 func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Video, error) {
 	//将int64 userId转换为 string strUserId
 	strUserId := strconv.FormatInt(userId, 10)
-	//step1:查询Redis DB5,如果key：strUserId存在,则获取集合中全部videoId
-	if n, err := middleware.Rdb5.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
+	//step1:查询Redis LikeUserId,如果key：strUserId存在,则获取集合中全部videoId
+	if n, err := middleware.RdbLikeUserId.Exists(middleware.Ctx, strUserId).Result(); n > 0 {
 		//如果有问题，说明查询redis失败,返回默认nil,返回错误信息
 		if err != nil {
-			log.Printf("方法:GetFavouriteList RedisDB6 query key失败：%v", err)
+			log.Printf("方法:GetFavouriteList RedisLikeVideoId query key失败：%v", err)
 			return nil, err
 		}
 		//获取集合中全部videoId
-		videoIdList, err1 := middleware.Rdb5.SMembers(middleware.Ctx, strUserId).Result()
+		videoIdList, err1 := middleware.RdbLikeUserId.SMembers(middleware.Ctx, strUserId).Result()
 		//如果有问题，说明查询redis失败,返回默认nil,返回错误信息
 		if err1 != nil {
-			log.Printf("方法:GetFavouriteList RedisDB6 get values失败：%v", err1)
+			log.Printf("方法:GetFavouriteList RedisLikeVideoId get values失败：%v", err1)
 			return nil, err1
 		}
 		//提前定义好切片长度,生成点赞列表集合
@@ -246,7 +346,7 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			favoriteVideoList = append(favoriteVideoList, video)
 		}
 		return favoriteVideoList, nil
-	} else { //如果Redis DB5不存在此key,通过userId查询likes表,返回所有点赞videoId，并维护到Redis DB5(key:strUserId)
+	} else { //如果Redis LikeUserId不存在此key,通过userId查询likes表,返回所有点赞videoId，并维护到Redis LikeUserId(key:strUserId)
 		videoIdList, err := dao.GetLikeVideoIdList(userId)
 		//如果有问题，说明查询数据库失败，返回nil和错误信息:"get likeVideoIdList failed"
 		if err != nil {
@@ -255,10 +355,10 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		}
 		//提前定义好切片长度,生成点赞列表集合
 		favoriteVideoList := make([]Video, 0, len(videoIdList))
-		//如果查询成功，无论是否有数据,遍历 int videoIdList,获得其中的 int likeVideoId，维护到Redis DB5(key:strUserId)
+		//如果查询成功，无论是否有数据,遍历 int videoIdList,获得其中的 int likeVideoId，维护到Redis LikeUserId(key:strUserId)
 		//同时添加到点赞列表集合中
 		for _, likeVideoId := range videoIdList {
-			middleware.Rdb5.SAdd(middleware.Ctx, strUserId, likeVideoId)
+			middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, likeVideoId)
 			video, err1 := like.GetVideo(likeVideoId, curId)
 			//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
 			if err1 != nil {

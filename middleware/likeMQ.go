@@ -51,7 +51,7 @@ func (l *LikeMQ) Publish(message string) {
 		panic(err)
 	}
 
-	l.channel.Publish(
+	err1 := l.channel.Publish(
 		l.exchange,
 		l.queueName,
 		false,
@@ -60,6 +60,9 @@ func (l *LikeMQ) Publish(message string) {
 			ContentType: "text/plain",
 			Body:        []byte(message),
 		})
+	if err1 != nil {
+		panic(err)
+	}
 
 }
 
@@ -73,7 +76,7 @@ func (l *LikeMQ) Consumer() {
 	}
 
 	//2、接收消息
-	msgs, err := l.channel.Consume(
+	messages, err1 := l.channel.Consume(
 		l.queueName,
 		//用来区分多个消费者
 		"",
@@ -87,16 +90,18 @@ func (l *LikeMQ) Consumer() {
 		false,
 		nil,
 	)
-	if err != nil {
-		panic(err)
+	if err1 != nil {
+		panic(err1)
 	}
 
 	forever := make(chan bool)
 	switch l.queueName {
 	case "like_add":
-		go l.consumerLikeAdd(msgs)
+		//点赞消费队列
+		go l.consumerLikeAdd(messages)
 	case "like_del":
-		go l.consumerLikeDel(msgs)
+		//取消赞消费队列
+		go l.consumerLikeDel(messages)
 
 	}
 
@@ -106,15 +111,15 @@ func (l *LikeMQ) Consumer() {
 
 }
 
-// 赞关系添加的消费方式。
-func (l *LikeMQ) consumerLikeAdd(msgs <-chan amqp.Delivery) {
-	for d := range msgs {
+//consumerLikeAdd 赞关系添加的消费方式。
+func (l *LikeMQ) consumerLikeAdd(messages <-chan amqp.Delivery) {
+	for d := range messages {
 		// 参数解析。
 		params := strings.Split(fmt.Sprintf("%s", d.Body), " ")
 		userId, _ := strconv.ParseInt(params[0], 10, 64)
 		videoId, _ := strconv.ParseInt(params[1], 10, 64)
-		//如果查询没有数据，用来生成该条点赞信息，存储在likedata中
-		var likedata dao.Like
+		//如果查询没有数据，用来生成该条点赞信息，存储在likeData中
+		var likeData dao.Like
 		//先查询是否有这条数据
 		likeInfo, err := dao.GetLikeInfo(userId, videoId)
 		//如果有问题，说明查询数据库失败，打印错误信息err:"get likeInfo failed"
@@ -122,11 +127,11 @@ func (l *LikeMQ) consumerLikeAdd(msgs <-chan amqp.Delivery) {
 			log.Printf(err.Error())
 		} else {
 			if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
-				likedata.User_id = userId       //插入userid
-				likedata.Video_id = videoId     //插入videoid
-				likedata.Cancel = config.IsLike //插入点赞cancel=0
+				likeData.UserId = userId        //插入userId
+				likeData.VideoId = videoId      //插入videoId
+				likeData.Cancel = config.IsLike //插入点赞cancel=0
 				//如果有问题，说明插入数据库失败，打印错误信息err:"insert data fail"
-				if err := dao.InsertLike(likedata); err != nil {
+				if err := dao.InsertLike(likeData); err != nil {
 					log.Printf(err.Error())
 				}
 			} else { //查到这条数据,更新即可;
@@ -139,51 +144,38 @@ func (l *LikeMQ) consumerLikeAdd(msgs <-chan amqp.Delivery) {
 	}
 }
 
-// 赞关系删除的消费方式。
-func (l *LikeMQ) consumerLikeDel(msgs <-chan amqp.Delivery) {
-	for d := range msgs {
+//consumerLikeDel 赞关系删除的消费方式。
+func (l *LikeMQ) consumerLikeDel(messages <-chan amqp.Delivery) {
+	for d := range messages {
 		// 参数解析。
 		params := strings.Split(fmt.Sprintf("%s", d.Body), " ")
 		userId, _ := strconv.ParseInt(params[0], 10, 64)
 		videoId, _ := strconv.ParseInt(params[1], 10, 64)
-		//取消赞行为，只有当前状态是点赞状态才会发起取消赞行为，所以如果查询到，必然是cancel==0(点赞)
-		//先查询是否有这条数据
-		likeInfo, err := dao.GetLikeInfo(userId, videoId)
-		//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
-		if err != nil {
-			log.Printf(err.Error())
-		} else {
-			if likeInfo == (dao.Like{}) { //只有当前是点赞状态才能取消点赞这个行为
-				// 所以如果查询不到数据则返回错误，err:"can't find data,this action invalid"，就不该有取消赞这个行为
-				log.Printf(errors.New("can't find data,this action invalid").Error())
+		//最多尝试操作数据库的次数
+		for i := 0; i < config.Attempts; i++ {
+			flag := false //默认无问题
+			//取消赞行为，只有当前状态是点赞状态才会发起取消赞行为，所以如果查询到，必然是cancel==0(点赞)
+			//先查询是否有这条数据
+			likeInfo, err := dao.GetLikeInfo(userId, videoId)
+			//如果有问题，说明查询数据库失败，返回错误信息err:"get likeInfo failed"
+			if err != nil {
+				log.Printf(err.Error())
+				flag = true //出现问题
 			} else {
-				//如果查询到数据，则更新为取消赞状态
-				//如果有问题，说明插入数据库失败，打印错误信息err:"update data fail"
-				if err := dao.UpdateLike(userId, videoId, config.Unlike); err != nil {
-					log.Printf(err.Error())
+				if likeInfo == (dao.Like{}) { //只有当前是点赞状态才能取消点赞这个行为
+					// 所以如果查询不到数据则返回错误信息:"can't find data,this action invalid"
+					log.Printf(errors.New("can't find data,this action invalid").Error())
+				} else {
+					//如果查询到数据，则更新为取消赞状态
+					//如果有问题，说明插入数据库失败，打印错误信息err:"update data fail"
+					if err := dao.UpdateLike(userId, videoId, config.Unlike); err != nil {
+						log.Printf(err.Error())
+						flag = true
+					}
 				}
 			}
-		}
-		//step1  如果userid存在 则删除点赞videoid
-		if n, _ := Rdb5.Exists(Ctx, params[0]).Result(); n > 0 {
-			//防止出现为空时的脏读
-			exist, err := Rdb5.SIsMember(Ctx, params[0], videoId).Result()
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			if exist {
-				Rdb5.SRem(Ctx, params[0], videoId)
-			}
-		}
-		//step2  如果videoId存在 则删除点赞userid
-		if n, _ := Rdb6.Exists(Ctx, params[1]).Result(); n > 0 {
-			//防止出现为空时的脏读
-			exist, err := Rdb6.SIsMember(Ctx, params[1], userId).Result()
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			if exist {
-				Rdb6.SRem(Ctx, params[1], userId)
+			if flag == false {
+				break
 			}
 		}
 	}

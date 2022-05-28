@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-func TestIsFavourit(t *testing.T) {
+func TestIsFavourite(t *testing.T) {
 	impl := LikeServiceImpl{}
-	bool, _ := impl.IsFavourit(666, 3)
-	fmt.Printf("%v", bool)
+	isFavourite, _ := impl.IsFavourite(666, 3)
+	fmt.Printf("%v", isFavourite)
 }
 
 func TestFavouriteCount(t *testing.T) {
