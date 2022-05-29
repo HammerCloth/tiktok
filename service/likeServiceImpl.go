@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type LikeServiceImpl struct {
@@ -329,6 +330,23 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			log.Printf("方法:GetFavouriteList RedisLikeVideoId get values失败：%v", err1)
 			return nil, err1
 		}
+
+		if len(videoIdList) > 5 {
+			favoriteVideoList := new([]Video)
+			i := len(videoIdList) / 5
+			if i%len(videoIdList) != 0 {
+				i++
+			}
+			var wg sync.WaitGroup
+			wg.Add(i)
+			for j := 0; j < i-1; j++ {
+				go like.test(videoIdList[5*j:5*j+5], curId, favoriteVideoList, &wg)
+			}
+			go like.test(videoIdList[5*i-5:], curId, favoriteVideoList, &wg)
+			wg.Wait()
+			return *favoriteVideoList, nil
+		}
+
 		//提前定义好切片长度,生成点赞列表集合
 		favoriteVideoList := make([]Video, 0, len(videoIdList))
 		//如果查询成功，无论是否有数据，遍历 string videoIdList,获得其中的 string videoId；
@@ -353,6 +371,23 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			log.Println(err.Error())
 			return nil, err
 		}
+
+		if len(videoIdList) > 5 {
+			favoriteVideoList := new([]Video)
+			i := len(videoIdList) / 5
+			if i%len(videoIdList) != 0 {
+				i++
+			}
+			var wg sync.WaitGroup
+			wg.Add(i)
+			for j := 0; j < i-1; j++ {
+				go like.test1(videoIdList[5*j:5*j+5], curId, favoriteVideoList, &wg)
+			}
+			go like.test1(videoIdList[5*i-5:], curId, favoriteVideoList, &wg)
+			wg.Wait()
+			return *favoriteVideoList, nil
+		}
+
 		//提前定义好切片长度,生成点赞列表集合
 		favoriteVideoList := make([]Video, 0, len(videoIdList))
 		//如果查询成功，无论是否有数据,遍历 int videoIdList,获得其中的 int likeVideoId，维护到Redis LikeUserId(key:strUserId)
@@ -369,5 +404,39 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			favoriteVideoList = append(favoriteVideoList, video)
 		}
 		return favoriteVideoList, nil
+	}
+}
+
+func (like *LikeServiceImpl) test(videoIdList []string, curId int64, favoriteVideoList *[]Video, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for _, likeVideoId := range videoIdList {
+		//将string likeVideoId转换为 int64 VideoId
+		VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
+		//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
+		video, err2 := like.GetVideo(VideoId, curId)
+		//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
+		if err2 != nil {
+			log.Println(errors.New("this favourite video is miss"))
+			continue
+		}
+		//将每个Video类型对象添加到集合中去
+		*favoriteVideoList = append(*favoriteVideoList, video)
+	}
+}
+
+func (like *LikeServiceImpl) test1(videoIdList []int64, curId int64, favoriteVideoList *[]Video, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for _, likeVideoId := range videoIdList {
+		//将string likeVideoId转换为 int64 VideoId
+		//VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
+		//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
+		video, err2 := like.GetVideo(likeVideoId, curId)
+		//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
+		if err2 != nil {
+			log.Println(errors.New("this favourite video is miss"))
+			continue
+		}
+		//将每个Video类型对象添加到集合中去
+		*favoriteVideoList = append(*favoriteVideoList, video)
 	}
 }
