@@ -38,7 +38,7 @@ func (videoService VideoServiceImpl) Feed(lastTime time.Time, userId int64) ([]V
 	}
 	log.Printf("方法videoService.copyVideos(&videos, &tableVideos, userId) 成功")
 	//返回数据，同时获得视频中最早的时间返回
-	return videos, tableVideos[config.VideoCount-1].PublishTime, nil
+	return videos, tableVideos[len(tableVideos)-1].PublishTime, nil
 }
 
 // GetVideo

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
 func main() {
 	// 初始化数据库
 	dao.Init()
