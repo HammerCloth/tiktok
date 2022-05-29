@@ -38,6 +38,16 @@ func Count(videoId int64) (int64, error) {
 	return count, nil
 }
 
+func CommentIdList(videoId int64) ([]string, error) {
+	var commentIdList []string
+	err := Db.Model(Comment{}).Select("id").Where("video_id = ?", videoId).Find(&commentIdList).Error
+	if err != nil {
+		log.Println("CommentIdList:", err)
+		return nil, err
+	}
+	return commentIdList, nil
+}
+
 // InsertComment
 // 2、发表评论
 func InsertComment(comment Comment) (Comment, error) {

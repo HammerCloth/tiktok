@@ -23,7 +23,7 @@ type CommentService interface {
 	Send(comment dao.Comment) (CommentInfo, error)
 	// DelComment
 	// 3、删除评论，传入评论id即可，返回错误状态信息
-	DelComment(id int64) error
+	DelComment(commentId int64) error
 	// GetList
 	// 4、查看评论列表-返回评论list-在controller层再封装外层的状态信息
 	GetList(videoId int64, userId int64) ([]CommentInfo, error)

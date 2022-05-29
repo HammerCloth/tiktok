@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
 func main() {
 	// 初始化数据库
 	dao.Init()
@@ -23,8 +24,6 @@ func main() {
 	middleware.InitFollowRabbitMQ()
 	// 初始化Like的相关消息队列，并开启消费。
 	middleware.InitLikeRabbitMQ()
-	//comment消息队列初始化
-	middleware.InitCommentRabbitMQ()
 
 	//gin
 	r := gin.Default()

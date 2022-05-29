@@ -22,8 +22,15 @@ type VideoListResponse struct {
 
 // Feed /feed/
 func Feed(c *gin.Context) {
-	me, _ := strconv.ParseInt(c.Query("latest_time"), 10, 64)
-	lastTime := time.UnixMilli(me)
+	inputTime := c.Query("latest_time")
+	log.Printf("传入的时间" + inputTime)
+	var lastTime time.Time
+	if inputTime != "0" {
+		me, _ := strconv.ParseInt(inputTime, 10, 64)
+		lastTime = time.Unix(me, 0)
+	} else {
+		lastTime = time.Now()
+	}
 	log.Printf("获取到时间戳%v", lastTime)
 	userId, _ := strconv.ParseInt(c.GetString("userId"), 10, 64)
 	log.Printf("获取到用户id:%v\n", userId)
@@ -40,7 +47,7 @@ func Feed(c *gin.Context) {
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
 		VideoList: feed,
-		NextTime:  nextTime.UnixMilli(),
+		NextTime:  nextTime.Unix(),
 	})
 }
 
