@@ -9,6 +9,10 @@ type LikeService interface {
 	IsFavourite(videoId int64, userId int64) (bool, error)
 	//FavouriteCount 根据当前视频id获取当前视频点赞数量。
 	FavouriteCount(videoId int64) (int64, error)
+	//TotalFavourite 根据userId获取这个用户总共被点赞数量
+	TotalFavourite(userId int64) (int64, error)
+	//FavouriteVideoCount 根据userId获取这个用户点赞视频数量
+	FavouriteVideoCount(userId int64) (int64, error)
 	/*
 	   2.request需要实现的功能
 	*/

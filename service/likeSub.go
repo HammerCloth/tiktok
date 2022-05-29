@@ -45,5 +45,10 @@ func (like *LikeSub) GetVideo(videoId int64, userId int64) (Video, error) {
 			IsFavorite:    true,
 		}, nil
 	}
+}
 
+func (like *LikeSub) GetVideoIdList(userId int64) ([]int64, error) {
+	videoList := []int64{51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+		66, 67, 68, 69, 70, 71, 72, 73, 74, 75}
+	return videoList, nil
 }
