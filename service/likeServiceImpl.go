@@ -125,8 +125,8 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 }
 
 // FavouriteAction 根据userId，videoId,actionType对视频进行点赞或者取消赞操作;
-//step1：更新数据库likes表;
-//step2: 维护Redis LikeUserId(key:strUserId),添加或者删除value:videoId,LikeVideoId(key:strVideoId),添加或者删除value:userId;
+//step1: 维护Redis LikeUserId(key:strUserId),添加或者删除value:videoId,LikeVideoId(key:strVideoId),添加或者删除value:userId;
+//step2：更新数据库likes表;
 func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, actionType int32) error {
 	//将int64 videoId转换为 string strVideoId
 	strUserId := strconv.FormatInt(userId, 10)
@@ -139,7 +139,7 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 	sb.WriteString(" ")
 	sb.WriteString(strVideoId)
 
-	//step2:维护Redis LikeUserId、LikeVideoId;
+	//step1:维护Redis LikeUserId、LikeVideoId;
 	//执行点赞操作维护
 	if actionType == config.LikeAction {
 		//查询Redis LikeUserId(key:strUserId)是否已经加载过此信息
@@ -191,15 +191,10 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				log.Printf("方法:FavouriteAction RedisLikeVideoId query key失败：%v", err)
 				return err
 			} //如果加载过此信息key:strVideoId，则加入value:userId
-			//如果redis LikeVideoId 添加失败，数据库操作成功，会有脏数据，所以只有redis操作成功才执行数据库likes表操作
+			//如果redis LikeVideoId 添加失败，返回错误信息
 			if _, err1 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, userId).Result(); err1 != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败：%v", err1)
 				return err1
-			} else {
-				//如果数据库操作失败了，redis是正确数据，客户端显示的是点赞成功，不会影响后续结果
-				//只有所有用户取消该视频点赞的时候redis才会重新加载数据库信息，这时候因为取消赞了必然和数据库信息一致
-				//同样这条信息发布成功与否也不重要，因为redis是正确信息,理由如上
-				middleware.RmqLikeAdd.Publish(sb.String())
 			}
 		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId
 			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
@@ -222,8 +217,6 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 			if _, err2 := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, userId).Result(); err2 != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败：%v", err2)
 				return err2
-			} else {
-				middleware.RmqLikeAdd.Publish(sb.String())
 			}
 		}
 	} else { //执行取消赞操作维护
@@ -274,12 +267,10 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				log.Printf("方法:FavouriteAction RedisLikeVideoId query key失败：%v", err)
 				return err
 			} //如果加载过此信息key:strVideoId，则删除value:userId
-			//如果redis LikeVideoId 删除失败，数据库操作成功，会有脏数据，所以只有redis操作成功才执行数据库likes表操作
+			//如果redis LikeVideoId 删除失败，返回错误信息
 			if _, err1 := middleware.RdbLikeVideoId.SRem(middleware.Ctx, strVideoId, userId).Result(); err1 != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId del value失败：%v", err1)
 				return err1
-			} else {
-				middleware.RmqLikeDel.Publish(sb.String())
 			}
 		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId
 			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
@@ -302,8 +293,6 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 			if _, err2 := middleware.RdbLikeVideoId.SRem(middleware.Ctx, strVideoId, userId).Result(); err2 != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId del value失败：%v", err2)
 				return err2
-			} else {
-				middleware.RmqLikeDel.Publish(sb.String())
 			}
 		}
 	}
