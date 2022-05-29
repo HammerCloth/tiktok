@@ -35,6 +35,11 @@ func NewFSIInstance() *FollowServiceImp {
 
 // IsFollowing 给定当前用户和目标用户id，判断是否存在关注关系。
 func (*FollowServiceImp) IsFollowing(userId int64, targetId int64) (bool, error) {
+	// 先查Redis里面是否有此关系。
+	if flag, err := middleware.RdbFollowingPart.SIsMember(middleware.Ctx, strconv.Itoa(int(userId)), targetId).Result(); flag {
+		return true, err
+	}
+	// SQL 查询。
 	relation, err := dao.NewFollowDaoInstance().FindRelation(userId, targetId)
 
 	if nil != err {
@@ -48,6 +53,11 @@ func (*FollowServiceImp) IsFollowing(userId int64, targetId int64) (bool, error)
 
 // GetFollowerCnt 给定当前用户id，查询其粉丝数量。
 func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
+	// 查Redis中是否已经存在。
+	if cnt, err := middleware.RdbFollowers.SCard(middleware.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
+		return cnt, err
+	}
+	// SQL中查询。
 	cnt, err := dao.NewFollowDaoInstance().GetFollowerCnt(userId)
 
 	if nil != err {
@@ -58,6 +68,11 @@ func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
 
 // GetFollowingCnt 给定当前用户id，查询其关注者数量。
 func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
+	// 查看Redis中是否有关注数。
+	if cnt, err := middleware.RdbFollowing.SCard(middleware.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
+		return cnt, err
+	}
+	// 用SQL查询。
 	cnt, err := dao.NewFollowDaoInstance().GetFollowingCnt(userId)
 
 	if nil != err {
@@ -148,6 +163,29 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 	// 记录日志
 	log.Println("消息打入成功。")
 	// 更新redis信息。
+	return updateRedisWithDel(userId, targetId)
+	/*followDao := dao.NewFollowDaoInstance()
+	follow, err := followDao.FindEverFollowing(targetId, userId)
+	// 寻找 SQL 出错。
+	if nil != err {
+		return false, err
+	}
+	// 曾经关注过，只需要update一下cancel即可。
+	if nil != follow {
+		_, err := followDao.UpdateFollowRelation(targetId, userId, 1)
+		// update 出错。
+		if nil != err {
+			return false, err
+		}
+		// update 成功。
+		return true, nil
+	}
+	// 没有关注关系
+	return false, nil*/
+}
+
+// 当取关时，更新redis里的信息
+func updateRedisWithDel(userId int64, targetId int64) (bool, error) {
 	/*
 		1-Redis是否存在followers_targetId.
 		2-Redis是否存在following_userId.
@@ -181,24 +219,6 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 	followingPartUserIdStr := strconv.Itoa(int(userId))
 	middleware.RdbFollowingPart.SRem(middleware.Ctx, followingPartUserIdStr, targetId)
 	return true, nil
-	/*followDao := dao.NewFollowDaoInstance()
-	follow, err := followDao.FindEverFollowing(targetId, userId)
-	// 寻找 SQL 出错。
-	if nil != err {
-		return false, err
-	}
-	// 曾经关注过，只需要update一下cancel即可。
-	if nil != follow {
-		_, err := followDao.UpdateFollowRelation(targetId, userId, 1)
-		// update 出错。
-		if nil != err {
-			return false, err
-		}
-		// update 成功。
-		return true, nil
-	}
-	// 没有关注关系
-	return false, nil*/
 }
 
 // GetFollowing 根据当前用户id来查询他的关注者列表。
@@ -244,19 +264,25 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	userIds, _ := middleware.RdbFollowing.SMembers(middleware.Ctx, UserIdStr).Result()
 	len := len(userIds)
 	users := make([]User, len)
+	wg := sync.WaitGroup{}
 	for i := 0; i < len; i++ {
-
-		user, _ := middleware.RdbUser.HGetAll(middleware.Ctx, userIds[i]).Result()
-		uid, _ := strconv.Atoi(userIds[i])
-		users[i].Id = int64(uid)
-		users[i].Name = user["name"]
-		cnt, _ := strconv.Atoi(user["follow_count"])
-		users[i].FollowCount = int64(cnt)
-		cnt, _ = strconv.Atoi(user["follower_count"])
-		users[i].FollowerCount = int64(cnt)
-		// 必然是关注情况。
-		users[i].IsFollow = true
+		wg.Add(1)
+		go func(k int) {
+			defer wg.Done()
+			user, _ := middleware.RdbUser.HGetAll(middleware.Ctx, userIds[k]).Result()
+			uid, _ := strconv.Atoi(userIds[k])
+			users[k].Id = int64(uid)
+			users[k].Name = user["name"]
+			cnt, _ := strconv.Atoi(user["follow_count"])
+			users[k].FollowCount = int64(cnt)
+			cnt, _ = strconv.Atoi(user["follower_count"])
+			users[k].FollowerCount = int64(cnt)
+			// 必然是关注情况。
+			users[k].IsFollow = true
+			//}
+		}(i)
 	}
+	wg.Wait()
 	log.Println("从Redis中查询到所有关注者。")
 	return users, nil
 }
@@ -347,19 +373,25 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 	userIds, _ := middleware.RdbFollowers.SMembers(middleware.Ctx, followersIdStr).Result()
 	len := len(userIds)
 	users := make([]User, len)
+	wg := sync.WaitGroup{}
 	for i := 0; i < len; i++ {
-		user, _ := middleware.RdbUser.HGetAll(middleware.Ctx, userIds[i]).Result()
-		uid, _ := strconv.Atoi(userIds[i])
-		users[i].Id = int64(uid)
-		users[i].Name = user["name"]
-		cnt, _ := strconv.Atoi(user["follow_count"])
-		users[i].FollowCount = int64(cnt)
-		cnt, _ = strconv.Atoi(user["follower_count"])
-		users[i].FollowerCount = int64(cnt)
-		// 从following_part_#{id}中看是否有关注关系。
-		isFollow, _ := middleware.RdbFollowingPart.SIsMember(middleware.Ctx, followersIdStr, userIds[i]).Result()
-		users[i].IsFollow = isFollow
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			user, _ := middleware.RdbUser.HGetAll(middleware.Ctx, userIds[i]).Result()
+			uid, _ := strconv.Atoi(userIds[i])
+			users[i].Id = int64(uid)
+			users[i].Name = user["name"]
+			cnt, _ := strconv.Atoi(user["follow_count"])
+			users[i].FollowCount = int64(cnt)
+			cnt, _ = strconv.Atoi(user["follower_count"])
+			users[i].FollowerCount = int64(cnt)
+			// 从following_part_#{id}中看是否有关注关系。
+			isFollow, _ := middleware.RdbFollowingPart.SIsMember(middleware.Ctx, followersIdStr, userIds[i]).Result()
+			users[i].IsFollow = isFollow
+		}(i)
 	}
+	wg.Wait()
 	// log.Println("从Redis中查询到所有粉丝们。")
 	return users, nil
 }

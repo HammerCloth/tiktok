@@ -143,7 +143,24 @@ func (f *FollowMQ) consumerFollowDel(msgs <-chan amqp.Delivery) {
 			// 执行出错，打印日志。
 			log.Println(err.Error())
 		}
+		// 再删Redis里的信息，防止脏数据，保证最终一致性。
+		updateRedisWithDel(userId, targetId)
 	}
+}
+func updateRedisWithDel(userId int, targetId int) {
+	// step1 删除粉丝关系。
+	targetIdStr := strconv.Itoa(targetId)
+	if cnt, _ := RdbFollowers.SCard(Ctx, targetIdStr).Result(); 0 != cnt {
+		RdbFollowers.SRem(Ctx, targetIdStr, userId)
+	}
+	// step2 删除关注关系。
+	followingIdStr := strconv.Itoa(userId)
+	if cnt, _ := RdbFollowing.SCard(Ctx, followingIdStr).Result(); 0 != cnt {
+		RdbFollowing.SRem(Ctx, followingIdStr, targetId)
+	}
+	// step3 删除部分关注关系。
+	followingPartUserIdStr := strconv.Itoa(userId)
+	RdbFollowingPart.SRem(Ctx, followingPartUserIdStr, targetId)
 }
 
 var RmqFollowAdd *FollowMQ
