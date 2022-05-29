@@ -6,7 +6,6 @@ import (
 	"TikTok/middleware"
 	"log"
 	"strconv"
-	"strings"
 )
 
 type CommentServiceImpl struct {
@@ -15,9 +14,9 @@ type CommentServiceImpl struct {
 
 // CountFromVideoId
 // 1、使用video id 查询Comment数量
-func (c CommentServiceImpl) CountFromVideoId(id int64) (int64, error) {
+func (c CommentServiceImpl) CountFromVideoId(videoId int64) (int64, error) {
 	//先在缓存中查
-	cnt, err := middleware.RdbVCid.ZCard(middleware.Ctx, strconv.FormatInt(id, 10)).Result()
+	cnt, err := middleware.RdbVCid.ZCard(middleware.Ctx, strconv.FormatInt(videoId, 10)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -25,18 +24,21 @@ func (c CommentServiceImpl) CountFromVideoId(id int64) (int64, error) {
 		return cnt, nil
 	}
 	//缓存中查不到则去数据库查
-	cntDao, err1 := dao.Count(id)
+	cntDao, err1 := dao.Count(videoId)
 	if err1 != nil {
 		return 0, nil
 	}
-	//更新缓存go，需要userId
-	//TODO使用查列表的函数
-	//将评论id存入redis，循环放进队列
+	//将评论id切片存入redis，
 	go func() {
 		//查询评论id list
-
+		cList, _ := dao.CommentIdList(videoId)
+		//评论id循环存入redis，
+		for _, _comment := range cList {
+			insertRedisVideoCommentId(strconv.Itoa(int(videoId)), _comment)
+		}
+		log.Println("count comment save ids in redis")
 	}()
-
+	//返回结果
 	return cntDao, nil
 }
 
@@ -72,20 +74,53 @@ func (c CommentServiceImpl) Send(comment dao.Comment) (CommentInfo, error) {
 		Content:    commentRtn.CommentText,
 		CreateDate: commentRtn.CreateDate.Format(config.DateTime),
 	}
-	//TODO将此发表的评论存入redis-不用mq
+	//将此发表的评论id存入redis-不用mq
 	//middleware.MqCommentAdd.CommentPublish(msg.String())
+	go func() {
+		insertRedisVideoCommentId(strconv.Itoa(int(comment.VideoId)), strconv.Itoa(int(commentRtn.Id)))
+		log.Println("send comment save in redis")
+	}()
 	//返回结果
 	return commentData, nil
 }
 
 // DelComment
 // 3、删除评论，传入评论id
-func (c CommentServiceImpl) DelComment(id int64) error {
+func (c CommentServiceImpl) DelComment(commentId int64) error {
 	log.Println("CommentService-DelComment: running") //函数已运行
-	//1.先查询redis，若有则删除，返回客户端-再go协程删除数据库-不用mq，考虑没有大量删除的情况
+	//1.先查询redis，若有则删除，返回客户端-再go协程删除数据库-不用mq、考虑没有大量删除的情况.
 	//无则在数据库中删除，返回客户端
+	n, err := middleware.RdbCVid.Exists(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	if n > 0 { //在内存中，则找出来删除，然后返回
+		vid, err1 := middleware.RdbCVid.Get(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+		if err1 != nil { //没找到，返回err
+			log.Println("redis find CV err:", err1)
+		}
+		//删除，两个redis都要删除
+		del1, err2 := middleware.RdbCVid.Del(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+		if err2 != nil {
+			log.Println(err2)
+		}
+		del2, err3 := middleware.RdbVCid.SRem(middleware.Ctx, vid, strconv.FormatInt(commentId, 10)).Result()
+		if err3 != nil {
+			log.Println(err3)
+		}
+		log.Println("del comment in Redis success:", del1, del2) //del1、del2代表删除了几条数据
 
-	return dao.DeleteComment(id)
+		//协程删除数据库中的值
+		go func() {
+			err := dao.DeleteComment(commentId)
+			if err != nil {
+				log.Println(err)
+			}
+		}()
+		return nil
+	}
+	//不在内存中，则直接走数据库删除
+	return dao.DeleteComment(commentId)
 }
 
 // GetList
@@ -140,6 +175,17 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 	}
 
 	log.Println("CommentService-GetList: get list success") //成功查询到评论列表
+
+	//查询redis中是否有此记录，无则加入
+	//将评论id切片存入redis，
+	go func() {
+		//评论id循环存入redis，
+		for _, _comment := range commentData {
+			insertRedisVideoCommentId(strconv.Itoa(int(videoId)), strconv.Itoa(int(_comment.Id)))
+		}
+		log.Println("comment list save ids in redis")
+	}()
+
 	return commentInfoList, nil
 
 	/*
@@ -178,10 +224,8 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		return commentInfoList, nil*/
 }
 
-func DelCommentFormRedis(videoId int64, comment int64) {
-	msg := strings.Builder{}
-	msg.WriteString(strconv.Itoa(int(videoId)))
-	msg.WriteString(strconv.Itoa(int(comment)))
-	//将消息加入消息队列
-	middleware.MqCommentDel.CommentPublish(msg.String())
+//在redis中存储video_id对应的comment_id 、 comment_id对应的video_id
+func insertRedisVideoCommentId(videoId string, commentId string) {
+	middleware.RdbVCid.SAdd(middleware.Ctx, videoId, commentId)
+	middleware.RdbCVid.Set(middleware.Ctx, commentId, videoId, 0)
 }

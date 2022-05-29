@@ -121,8 +121,7 @@ func CommentAction(c *gin.Context) {
 			StatusCode: 0,
 			StatusMsg:  "delete comment success",
 		})
-		//更新redis
-		go service.DelCommentFormRedis(videoId, commentId)
+
 		log.Println("CommentController-Comment_Action: return delete success") //函数执行成功，返回正确信息
 		return
 	}
