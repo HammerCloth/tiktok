@@ -88,8 +88,9 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
-	totalFavorited, _ := usi.TotalFavourite(id)
-	favoritedCount, _ := usi.FavouriteVideoCount(id)
+	u := GetLikeService() //解决循环依赖
+	totalFavorited, _ := u.TotalFavourite(id)
+	favoritedCount, _ := u.FavouriteVideoCount(id)
 	user = User{
 		Id:             id,
 		Name:           tableUser.Name,
@@ -132,8 +133,9 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
-	totalFavorited, _ := usi.TotalFavourite(id)
-	favoritedCount, _ := usi.FavouriteVideoCount(id)
+	u := GetLikeService() //解决循环依赖
+	totalFavorited, _ := u.TotalFavourite(id)
+	favoritedCount, _ := u.FavouriteVideoCount(id)
 	user = User{
 		Id:             id,
 		Name:           tableUser.Name,

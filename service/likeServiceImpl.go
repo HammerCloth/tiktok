@@ -13,6 +13,7 @@ import (
 
 type LikeServiceImpl struct {
 	VideoService
+	UserService
 }
 
 //IsFavourite 根据userId,videoId查询点赞状态 这边可以快一点,通过查询两个Redis DB;
@@ -319,50 +320,19 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			log.Printf("方法:GetFavouriteList RedisLikeVideoId get values失败：%v", err1)
 			return nil, err1
 		}
-
-		//if len(videoIdList) > 5 {
-		//	favoriteVideoList := new([]Video)
-		//	i := len(videoIdList) / 5
-		//	if i%len(videoIdList) != 0 {
-		//		i++
-		//	}
-		//	var wg sync.WaitGroup
-		//	wg.Add(i)
-		//	for j := 0; j < i-1; j++ {
-		//		go like.test(videoIdList[5*j:5*j+5], curId, favoriteVideoList, &wg)
-		//	}
-		//	go like.test(videoIdList[5*i-5:], curId, favoriteVideoList, &wg)
-		//	wg.Wait()
-		//	return *favoriteVideoList, nil
-		//}
-
+		//提前开辟点赞列表空间
 		favoriteVideoList := new([]Video)
+		//采用协程并发将Video类型对象添加到集合中去
 		i := len(videoIdList)
 		var wg sync.WaitGroup
 		wg.Add(i)
 		for j := 0; j < i; j++ {
-			go like.test(videoIdList[j:j+1], curId, favoriteVideoList, &wg)
+			//将string videoId转换为 int64 VideoId
+			videoId, _ := strconv.ParseInt(videoIdList[j], 10, 64)
+			go like.addFavouriteVideoList(videoId, curId, favoriteVideoList, &wg)
 		}
 		wg.Wait()
 		return *favoriteVideoList, nil
-
-		////提前定义好切片长度,生成点赞列表集合
-		//favoriteVideoList := make([]Video, 0, len(videoIdList))
-		////如果查询成功，无论是否有数据，遍历 string videoIdList,获得其中的 string videoId；
-		//for _, likeVideoId := range videoIdList {
-		//	//将string likeVideoId转换为 int64 VideoId
-		//	VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
-		//	//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
-		//	video, err2 := like.GetVideo(VideoId, curId)
-		//	//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
-		//	if err2 != nil {
-		//		log.Println(errors.New("this favourite video is miss"))
-		//		continue
-		//	}
-		//	//将每个Video类型对象添加到集合中去
-		//	favoriteVideoList = append(favoriteVideoList, video)
-		//}
-		//return favoriteVideoList, nil
 	} else { //如果Redis LikeUserId不存在此key,通过userId查询likes表,返回所有点赞videoId，并维护到Redis LikeUserId(key:strUserId)
 		videoIdList, err := dao.GetLikeVideoIdList(userId)
 		//如果有问题，说明查询数据库失败，返回nil和错误信息:"get likeVideoIdList failed"
@@ -370,85 +340,55 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 			log.Println(err.Error())
 			return nil, err
 		}
-
+		//提前开辟点赞列表空间
 		favoriteVideoList := new([]Video)
+		//采用协程并发将Video类型对象添加到集合中去
 		i := len(videoIdList)
 		var wg sync.WaitGroup
 		wg.Add(i)
 		for j := 0; j < i; j++ {
-			go like.test1(videoIdList[j:j+1], curId, favoriteVideoList, &wg)
+			go like.addFavouriteVideoList(videoIdList[j], curId, favoriteVideoList, &wg)
 		}
 		wg.Wait()
 		return *favoriteVideoList, nil
-
-		////提前定义好切片长度,生成点赞列表集合
-		//favoriteVideoList := make([]Video, 0, len(videoIdList))
-		////如果查询成功，无论是否有数据,遍历 int videoIdList,获得其中的 int likeVideoId，维护到Redis LikeUserId(key:strUserId)
-		////同时添加到点赞列表集合中
-		//for _, likeVideoId := range videoIdList {
-		//	middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, likeVideoId)
-		//	video, err1 := like.GetVideo(likeVideoId, curId)
-		//	//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
-		//	if err1 != nil {
-		//		log.Println(errors.New("can't find this favourite video"))
-		//		continue
-		//	}
-		//	//将每个Video类型对象添加到集合中去
-		//	favoriteVideoList = append(favoriteVideoList, video)
-		//}
-		//return favoriteVideoList, nil
 	}
 }
 
-func (like *LikeServiceImpl) test(videoIdList []string, curId int64, favoriteVideoList *[]Video, wg *sync.WaitGroup) {
+//addFavouriteVideoList 根据videoId,登录用户curId，添加视频对象到点赞列表空间
+func (like *LikeServiceImpl) addFavouriteVideoList(videoId int64, curId int64, favoriteVideoList *[]Video, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for _, likeVideoId := range videoIdList {
-		//将string likeVideoId转换为 int64 VideoId
-		VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
-		//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
-		video, err2 := like.GetVideo(VideoId, curId)
-		//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
-		if err2 != nil {
-			log.Println(errors.New("this favourite video is miss"))
-			continue
-		}
-		//将每个Video类型对象添加到集合中去
-		*favoriteVideoList = append(*favoriteVideoList, video)
+	//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
+	video, err := like.GetVideo(videoId, curId)
+	//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且不加入此视频
+	if err != nil {
+		log.Println(errors.New("this favourite video is miss"))
+		return
 	}
-}
-
-func (like *LikeServiceImpl) test1(videoIdList []int64, curId int64, favoriteVideoList *[]Video, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for _, likeVideoId := range videoIdList {
-		//将string likeVideoId转换为 int64 VideoId
-		//VideoId, _ := strconv.ParseInt(likeVideoId, 10, 64)
-		//调用videoService接口，GetVideo：根据videoId，当前用户id:curId，返回Video类型对象
-		video, err2 := like.GetVideo(likeVideoId, curId)
-		//如果没有获取这个video_id的视频，视频可能被删除了,打印异常,并且跳过此视频
-		if err2 != nil {
-			log.Println(errors.New("this favourite video is miss"))
-			continue
-		}
-		//将每个Video类型对象添加到集合中去
-		*favoriteVideoList = append(*favoriteVideoList, video)
-	}
+	//将Video类型对象添加到集合中去
+	*favoriteVideoList = append(*favoriteVideoList, video)
 }
 
 //TotalFavourite 根据userId获取这个用户总共被点赞数量
 func (like *LikeServiceImpl) TotalFavourite(userId int64) (int64, error) {
-	l := new(LikeSub)
-	videoIdList, err := l.GetVideoIdList(userId)
+	//根据userId获取这个用户的发布视频列表信息
+	videoIdList, err := like.GetVideoIdList(userId)
 	if err != nil {
 		log.Printf(err.Error())
 		return 0, err
 	}
-	var sum int64
-	for _, videoId := range videoIdList {
-		count, err := like.FavouriteCount(videoId)
-		if err != nil {
-			log.Printf(err.Error())
-			continue
-		}
+	var sum int64 //该用户的总被点赞数
+	//提前开辟空间,存取每个视频的点赞数
+	videoLikeCountList := new([]int64)
+	//采用协程并发将对应videoId的点赞数添加到集合中去
+	i := len(videoIdList)
+	var wg sync.WaitGroup
+	wg.Add(i)
+	for j := 0; j < i; j++ {
+		go like.addVideoLikeCount(videoIdList[j], videoLikeCountList, &wg)
+	}
+	wg.Wait()
+	//遍历累加，求总被点赞数
+	for _, count := range *videoLikeCountList {
 		sum += count
 	}
 	return sum, nil
@@ -497,4 +437,28 @@ func (like *LikeServiceImpl) FavouriteVideoCount(userId int64) (int64, error) {
 		log.Printf("方法:FavouriteVideoCount RdbLikeUserId query count 成功")
 		return count, nil
 	}
+}
+
+//addVideoLikeCount 根据videoId，将该视频点赞数加入对应提前开辟好的空间内
+func (like *LikeServiceImpl) addVideoLikeCount(videoId int64, videoLikeCountList *[]int64, wg *sync.WaitGroup) {
+	defer wg.Done()
+	//调用FavouriteCount：根据videoId,获取点赞数
+	count, err := like.FavouriteCount(videoId)
+	if err != nil {
+		//如果有错误，输出错误信息，并不加入该视频点赞数
+		log.Printf(err.Error())
+		return
+	}
+	*videoLikeCountList = append(*videoLikeCountList, count)
+}
+
+//GetLikeService 解决likeService调videoService,videoService调userService,useService调likeService循环依赖的问题
+func GetLikeService() LikeServiceImpl {
+	var userService UserServiceImpl
+	var videoService VideoServiceImpl
+	var likeService LikeServiceImpl
+	userService.LikeService = &likeService
+	likeService.VideoService = &videoService
+	videoService.UserService = &userService
+	return likeService
 }
