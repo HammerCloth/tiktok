@@ -19,7 +19,7 @@ type CommentListResponse struct {
 type CommentActionResponse struct {
 	StatusCode int32               `json:"status_code"`
 	StatusMsg  string              `json:"status_msg,omitempty"`
-	Comment    service.CommentInfo `json:"comment_list"`
+	Comment    service.CommentInfo `json:"comment"`
 }
 
 // CommentAction
