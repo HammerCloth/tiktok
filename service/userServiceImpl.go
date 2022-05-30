@@ -130,16 +130,12 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
-	totalFavorited, _ := usi.TotalFavourite(id)
-	favoritedCount, _ := usi.FavouriteVideoCount(id)
 	user = User{
-		Id:             id,
-		Name:           tableUser.Name,
-		FollowCount:    followCount,
-		FollowerCount:  followerCount,
-		IsFollow:       isfollow,
-		TotalFavorited: totalFavorited,
-		FavoriteCount:  favoritedCount,
+		Id:            id,
+		Name:          tableUser.Name,
+		FollowCount:   followCount,
+		FollowerCount: followerCount,
+		IsFollow:      isfollow,
 	}
 	return user, nil
 }
