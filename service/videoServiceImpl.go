@@ -185,3 +185,17 @@ func (videoService *VideoServiceImpl) creatVideo(video *Video, data *dao.TableVi
 
 	wg.Wait()
 }
+
+// GetVideoIdList
+// 通过一个作者id，返回该用户发布的视频id切片数组
+func (videoService *VideoServiceImpl) GetVideoIdList(authorId int64) ([]int64, error) {
+	//直接调用dao层方法获取id即可
+	id, err := dao.GetVideoIdsByAuthorId(authorId)
+	if err != nil {
+		log.Printf("方法dao.GetVideoIdsByAuthorId(%v) 失败：%v", authorId, err)
+		return nil, err
+	} else {
+		log.Printf("方法dao.GetVideoIdsByAuthorId(%v) 成功", authorId)
+	}
+	return id, nil
+}
