@@ -81,3 +81,12 @@ func TestVideoFtp(t *testing.T) {
 func TestSave(t *testing.T) {
 	Save("test", "test", 10024, "aaa")
 }
+
+func TestGetVideoIdsByAuthorId(t *testing.T) {
+	Init()
+	id, err := GetVideoIdsByAuthorId(20003)
+	if err != nil {
+		return
+	}
+	fmt.Println(id)
+}
