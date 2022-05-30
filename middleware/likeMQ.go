@@ -118,26 +118,37 @@ func (l *LikeMQ) consumerLikeAdd(messages <-chan amqp.Delivery) {
 		params := strings.Split(fmt.Sprintf("%s", d.Body), " ")
 		userId, _ := strconv.ParseInt(params[0], 10, 64)
 		videoId, _ := strconv.ParseInt(params[1], 10, 64)
-		//如果查询没有数据，用来生成该条点赞信息，存储在likeData中
-		var likeData dao.Like
-		//先查询是否有这条数据
-		likeInfo, err := dao.GetLikeInfo(userId, videoId)
-		//如果有问题，说明查询数据库失败，打印错误信息err:"get likeInfo failed"
-		if err != nil {
-			log.Printf(err.Error())
-		} else {
-			if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
-				likeData.UserId = userId        //插入userId
-				likeData.VideoId = videoId      //插入videoId
-				likeData.Cancel = config.IsLike //插入点赞cancel=0
-				//如果有问题，说明插入数据库失败，打印错误信息err:"insert data fail"
-				if err := dao.InsertLike(likeData); err != nil {
-					log.Printf(err.Error())
+		//最多尝试操作数据库的次数
+		for i := 0; i < config.Attempts; i++ {
+			flag := false //默认无问题
+			//如果查询没有数据，用来生成该条点赞信息，存储在likeData中
+			var likeData dao.Like
+			//先查询是否有这条数据
+			likeInfo, err := dao.GetLikeInfo(userId, videoId)
+			//如果有问题，说明查询数据库失败，打印错误信息err:"get likeInfo failed"
+			if err != nil {
+				log.Printf(err.Error())
+				flag = true //出现问题
+			} else {
+				if likeInfo == (dao.Like{}) { //没查到这条数据，则新建这条数据；
+					likeData.UserId = userId        //插入userId
+					likeData.VideoId = videoId      //插入videoId
+					likeData.Cancel = config.IsLike //插入点赞cancel=0
+					//如果有问题，说明插入数据库失败，打印错误信息err:"insert data fail"
+					if err := dao.InsertLike(likeData); err != nil {
+						log.Printf(err.Error())
+						flag = true //出现问题
+					}
+				} else { //查到这条数据,更新即可;
+					//如果有问题，说明插入数据库失败，打印错误信息err:"update data fail"
+					if err := dao.UpdateLike(userId, videoId, config.IsLike); err != nil {
+						log.Printf(err.Error())
+						flag = true //出现问题
+					}
 				}
-			} else { //查到这条数据,更新即可;
-				//如果有问题，说明插入数据库失败，打印错误信息err:"update data fail"
-				if err := dao.UpdateLike(userId, videoId, config.IsLike); err != nil {
-					log.Printf(err.Error())
+				//一遍流程下来正常执行了，那就打断结束，不再尝试
+				if flag == false {
+					break
 				}
 			}
 		}
@@ -174,6 +185,7 @@ func (l *LikeMQ) consumerLikeDel(messages <-chan amqp.Delivery) {
 					}
 				}
 			}
+			//一遍流程下来正常执行了，那就打断结束，不再尝试
 			if flag == false {
 				break
 			}
