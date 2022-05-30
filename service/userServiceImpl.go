@@ -15,6 +15,7 @@ import (
 
 type UserServiceImpl struct {
 	FollowService
+	LikeService
 }
 
 // GetTableUserList 获得全部TableUser对象
@@ -64,11 +65,13 @@ func (usi *UserServiceImpl) InsertTableUser(tableUser *dao.TableUser) bool {
 // GetUserById 未登录情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	user := User{
-		Id:            0,
-		Name:          "",
-		FollowCount:   0,
-		FollowerCount: 0,
-		IsFollow:      false,
+		Id:             0,
+		Name:           "",
+		FollowCount:    0,
+		FollowerCount:  0,
+		IsFollow:       false,
+		TotalFavorited: 0,
+		FavoriteCount:  0,
 	}
 	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
@@ -85,12 +88,16 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
+	totalFavorited, _ := usi.TotalFavourite(id)
+	favoritedCount, _ := usi.FavouriteVideoCount(id)
 	user = User{
-		Id:            id,
-		Name:          tableUser.Name,
-		FollowCount:   followCount,
-		FollowerCount: followerCount,
-		IsFollow:      false,
+		Id:             id,
+		Name:           tableUser.Name,
+		FollowCount:    followCount,
+		FollowerCount:  followerCount,
+		IsFollow:       false,
+		TotalFavorited: totalFavorited,
+		FavoriteCount:  favoritedCount,
 	}
 	return user, nil
 }
@@ -123,12 +130,16 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
+	totalFavorited, _ := usi.TotalFavourite(id)
+	favoritedCount, _ := usi.FavouriteVideoCount(id)
 	user = User{
-		Id:            id,
-		Name:          tableUser.Name,
-		FollowCount:   followCount,
-		FollowerCount: followerCount,
-		IsFollow:      isfollow,
+		Id:             id,
+		Name:           tableUser.Name,
+		FollowCount:    followCount,
+		FollowerCount:  followerCount,
+		IsFollow:       isfollow,
+		TotalFavorited: totalFavorited,
+		FavoriteCount:  favoritedCount,
 	}
 	return user, nil
 }

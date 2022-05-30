@@ -88,6 +88,7 @@ func UserInfo(c *gin.Context) {
 
 	usi := service.UserServiceImpl{
 		FollowService: &service.FollowServiceImp{},
+		LikeService:   &service.LikeServiceImpl{},
 	}
 
 	if u, err := usi.GetUserById(id); err != nil {
