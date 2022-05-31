@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type CommentServiceImpl struct {
@@ -19,26 +20,50 @@ type CommentServiceImpl struct {
 func (c CommentServiceImpl) CountFromVideoId(videoId int64) (int64, error) {
 	//先在缓存中查
 	cnt, err := middleware.RdbVCid.SCard(middleware.Ctx, strconv.FormatInt(videoId, 10)).Result()
-	if err != nil {
-		return 0, err
+	if err != nil { //若查询缓存出错，则打印log
+		//return 0, err
+		log.Println("count from redis error:", err)
 	}
 	log.Println("comment count redis :", cnt)
-	if cnt != 0 {
-		return cnt, nil
+	if cnt != 0 { //数据库中查到了数量，则返回数量值-1（去除0值）
+		return cnt - 1, nil
 	}
 	//缓存中查不到则去数据库查
 	cntDao, err1 := dao.Count(videoId)
-	log.Println("comment count redis :", cntDao)
+	log.Println("comment count dao :", cntDao)
 	if err1 != nil {
+		log.Println("comment count dao err:", err1)
 		return 0, nil
 	}
-	//将评论id切片存入redis，
+	//将评论id切片存入redis-第一次存储 V-C set 值：
 	go func() {
 		//查询评论id list
 		cList, _ := dao.CommentIdList(videoId)
-		//评论id循环存入redis，
+		//先在redis中存储一个0值，防止脏读
+		_, _err := middleware.RdbVCid.SAdd(middleware.Ctx, strconv.Itoa(int(videoId)), 0).Result()
+		if _err != nil { //若存储redis失败，则直接返回
+			log.Println("redis save one vId - cId 0 failed")
+			return
+		}
+		//设置key值过期时间
+		_, err := middleware.RdbVCid.Expire(middleware.Ctx, strconv.Itoa(int(videoId)), time.Hour*8000).Result()
+		if err != nil {
+			log.Println("redis save one vId - cId expire failed")
+		}
+		//评论id循环存入redis
 		for _, _comment := range cList {
-			insertRedisVideoCommentId(strconv.Itoa(int(videoId)), _comment)
+			//insertRedisVideoCommentId(strconv.Itoa(int(videoId)), _comment)
+			_, _err := middleware.RdbVCid.SAdd(middleware.Ctx, strconv.Itoa(int(videoId)), _comment).Result()
+			if _err != nil { //若存储redis失败，则直接删除key
+				log.Println("redis save one vId - cId failed, key deleted")
+				middleware.RdbVCid.Del(middleware.Ctx, strconv.Itoa(int(videoId)))
+				return
+			}
+			//一对一的db存储失败不用删除，不影响正确性
+			_, _err = middleware.RdbCVid.Set(middleware.Ctx, _comment, strconv.Itoa(int(videoId)), 0).Result()
+			if _err != nil {
+				log.Println("redis save one cId - vId failed")
+			}
 		}
 		log.Println("count comment save ids in redis")
 	}()
@@ -92,8 +117,7 @@ func (c CommentServiceImpl) Send(comment dao.Comment) (CommentInfo, error) {
 // 3、删除评论，传入评论id
 func (c CommentServiceImpl) DelComment(commentId int64) error {
 	log.Println("CommentService-DelComment: running") //函数已运行
-	//1.先查询redis，若有则删除，返回客户端-再go协程删除数据库-不用mq、考虑没有大量删除的情况.
-	//无则在数据库中删除，返回客户端
+	//1.先查询redis，若有则删除，返回客户端-再go协程删除数据库；无则在数据库中删除，返回客户端。
 	n, err := middleware.RdbCVid.Exists(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
 	if err != nil {
 		log.Println(err)
@@ -114,13 +138,30 @@ func (c CommentServiceImpl) DelComment(commentId int64) error {
 		}
 		log.Println("del comment in Redis success:", del1, del2) //del1、del2代表删除了几条数据
 
-		//协程删除数据库中的值
-		go func() {
-			err := dao.DeleteComment(commentId)
-			if err != nil {
-				log.Println(err)
-			}
-		}()
+		/*
+			//由于多协程会造成数据库读取压力大，因此使用chan来减少压力
+			commentChan := make(chan int64)
+			//协程删除数据库中的值
+			go func() {
+				commentChan <- commentId
+				close(commentChan)
+				//err := dao.DeleteComment(commentId)
+				//if err != nil {
+				//	log.Println(err)
+				//}
+			}()
+			go func() {
+				for cId := range commentChan {
+					err := dao.DeleteComment(cId)
+					if err != nil {
+						log.Println(err)
+					}
+				}
+			}()*/
+
+		//使用mq进行数据库中评论的删除
+		//评论id传入消息队列
+		middleware.RmqCommentDel.Publish(strconv.FormatInt(commentId, 10))
 		return nil
 	}
 	//不在内存中，则直接走数据库删除
@@ -199,6 +240,32 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		log.Println("CommentService-GetList: return err: " + err.Error()) //函数返回提示错误信息
 		return nil, err
 	}
+	/*
+		//2.根据查询到的评论用户id和当前用户id，查询评论用户信息
+		impl := UserServiceImpl{
+			FollowService: &FollowServiceImp{},
+		}
+		var userData *User
+		wg.Add(1)
+		go func() {
+			*userData, err = impl.GetUserByIdWithCurId(comment.UserId, userId)
+			//查看传入评论的两个userid
+			//log.Printf("comment.User_id:%v\n", comment.User_id)
+			//log.Printf("now_userId:%v\n", userId)
+			if err != nil {
+				log.Println("CommentService-GetList: GetUserByIdWithCurId return err: " + err.Error()) //函数返回提示错误信息
+				//return nil, err //协程里不能返回这个，只有打log了
+			}
+			wg.Done()//慢了
+		}()
+		wg.Wait()
+		commentData := CommentInfo{
+			Id:         comment.Id,
+			UserInfo:   *userData,
+			Content:    comment.CommentText,
+			CreateDate: comment.CreateDate.Format(config.DateTime),
+		}*/
+
 	//提前定义好切片长度
 	commentInfoList := make([]CommentInfo, len(commentList))
 
@@ -211,31 +278,6 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		//将video进行组装，添加想要的信息,插入从数据库中查到的数据
 		go func(comment dao.Comment) {
 			oneComment(&commentData, &comment, userId)
-			/*
-				//2.根据查询到的评论用户id和当前用户id，查询评论用户信息
-				impl := UserServiceImpl{
-					FollowService: &FollowServiceImp{},
-				}
-				var userData *User
-				wg.Add(1)
-				go func() {
-					*userData, err = impl.GetUserByIdWithCurId(comment.UserId, userId)
-					//查看传入评论的两个userid
-					//log.Printf("comment.User_id:%v\n", comment.User_id)
-					//log.Printf("now_userId:%v\n", userId)
-					if err != nil {
-						log.Println("CommentService-GetList: GetUserByIdWithCurId return err: " + err.Error()) //函数返回提示错误信息
-						//return nil, err //协程里不能返回这个，只有打log了
-					}
-					wg.Done()//慢了
-				}()
-				wg.Wait()
-				commentData := CommentInfo{
-					Id:         comment.Id,
-					UserInfo:   *userData,
-					Content:    comment.CommentText,
-					CreateDate: comment.CreateDate.Format(config.DateTime),
-				}*/
 			//3.组装list
 			//commentInfoList = append(commentInfoList, commentData)
 			commentInfoList[idx] = commentData
@@ -252,10 +294,19 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 
 //在redis中存储video_id对应的comment_id 、 comment_id对应的video_id
 func insertRedisVideoCommentId(videoId string, commentId string) {
-	middleware.RdbVCid.SAdd(middleware.Ctx, videoId, commentId)
-	middleware.RdbCVid.Set(middleware.Ctx, commentId, videoId, 0)
+	_, err := middleware.RdbVCid.SAdd(middleware.Ctx, videoId, commentId).Result()
+	if err != nil { //若存储redis失败，则直接删除key
+		log.Println("redis save send: vId - cId failed, key deleted")
+		middleware.RdbVCid.Del(middleware.Ctx, videoId)
+		return
+	}
+	_, err = middleware.RdbCVid.Set(middleware.Ctx, commentId, videoId, 0).Result()
+	if err != nil {
+		log.Println("redis save one cId - vId failed")
+	}
 }
 
+//此函数用于给一个评论赋值：评论信息+用户信息 填充
 func oneComment(comment *CommentInfo, com *dao.Comment, userId int64) {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -275,6 +326,7 @@ func oneComment(comment *CommentInfo, com *dao.Comment, userId int64) {
 	wg.Wait()
 }
 
+// CommentSlice 此变量以及以下三个函数都是做排序-准备工作
 type CommentSlice []CommentInfo
 
 func (a CommentSlice) Len() int { //重写Len()方法

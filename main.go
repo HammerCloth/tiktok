@@ -24,6 +24,8 @@ func main() {
 	middleware.InitFollowRabbitMQ()
 	// 初始化Like的相关消息队列，并开启消费。
 	middleware.InitLikeRabbitMQ()
+	//初始化Comment的消息队列，并开启消费
+	middleware.InitCommentRabbitMQ()
 
 	//gin
 	r := gin.Default()
