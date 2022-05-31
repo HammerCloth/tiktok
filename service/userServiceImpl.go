@@ -15,11 +15,12 @@ import (
 
 type UserServiceImpl struct {
 	FollowService
+	LikeService
 }
 
 // GetTableUserList 获得全部TableUser对象
 func (usi *UserServiceImpl) GetTableUserList() []dao.TableUser {
-	tableUsers, err := dao.NewUserDaoInstance().GetTableUserList()
+	tableUsers, err := dao.GetTableUserList()
 	if err != nil {
 		log.Println("Err:", err.Error())
 		return tableUsers
@@ -29,7 +30,7 @@ func (usi *UserServiceImpl) GetTableUserList() []dao.TableUser {
 
 // GetTableUserByUsername 根据username获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserByUsername(name string) dao.TableUser {
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserByUsername(name)
+	tableUser, err := dao.GetTableUserByUsername(name)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -41,7 +42,7 @@ func (usi *UserServiceImpl) GetTableUserByUsername(name string) dao.TableUser {
 
 // GetTableUserById 根据user_id获得TableUser对象
 func (usi *UserServiceImpl) GetTableUserById(id int64) dao.TableUser {
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -53,7 +54,7 @@ func (usi *UserServiceImpl) GetTableUserById(id int64) dao.TableUser {
 
 // InsertTableUser 将tableUser插入表内
 func (usi *UserServiceImpl) InsertTableUser(tableUser *dao.TableUser) bool {
-	flag := dao.NewUserDaoInstance().InsertTableUser(tableUser)
+	flag := dao.InsertTableUser(tableUser)
 	if flag == false {
 		log.Println("插入失败")
 		return false
@@ -64,13 +65,15 @@ func (usi *UserServiceImpl) InsertTableUser(tableUser *dao.TableUser) bool {
 // GetUserById 未登录情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	user := User{
-		Id:            0,
-		Name:          "",
-		FollowCount:   0,
-		FollowerCount: 0,
-		IsFollow:      false,
+		Id:             0,
+		Name:           "",
+		FollowCount:    0,
+		FollowerCount:  0,
+		IsFollow:       false,
+		TotalFavorited: 0,
+		FavoriteCount:  0,
 	}
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -85,12 +88,17 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
+	u := GetLikeService() //解决循环依赖
+	totalFavorited, _ := u.TotalFavourite(id)
+	favoritedCount, _ := u.FavouriteVideoCount(id)
 	user = User{
-		Id:            id,
-		Name:          tableUser.Name,
-		FollowCount:   followCount,
-		FollowerCount: followerCount,
-		IsFollow:      false,
+		Id:             id,
+		Name:           tableUser.Name,
+		FollowCount:    followCount,
+		FollowerCount:  followerCount,
+		IsFollow:       false,
+		TotalFavorited: totalFavorited,
+		FavoriteCount:  favoritedCount,
 	}
 	return user, nil
 }
@@ -98,13 +106,15 @@ func (usi *UserServiceImpl) GetUserById(id int64) (User, error) {
 // GetUserByIdWithCurId 已登录(curID)情况下,根据user_id获得User对象
 func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, error) {
 	user := User{
-		Id:            0,
-		Name:          "",
-		FollowCount:   0,
-		FollowerCount: 0,
-		IsFollow:      false,
+		Id:             0,
+		Name:           "",
+		FollowCount:    0,
+		FollowerCount:  0,
+		IsFollow:       false,
+		TotalFavorited: 0,
+		FavoriteCount:  0,
 	}
-	tableUser, err := dao.NewUserDaoInstance().GetTableUserById(id)
+	tableUser, err := dao.GetTableUserById(id)
 	if err != nil {
 		log.Println("Err:", err.Error())
 		log.Println("User Not Found")
@@ -123,12 +133,17 @@ func (usi *UserServiceImpl) GetUserByIdWithCurId(id int64, curId int64) (User, e
 	if err != nil {
 		log.Println("Err:", err.Error())
 	}
+	u := GetLikeService() //解决循环依赖
+	totalFavorited, _ := u.TotalFavourite(id)
+	favoritedCount, _ := u.FavouriteVideoCount(id)
 	user = User{
-		Id:            id,
-		Name:          tableUser.Name,
-		FollowCount:   followCount,
-		FollowerCount: followerCount,
-		IsFollow:      isfollow,
+		Id:             id,
+		Name:           tableUser.Name,
+		FollowCount:    followCount,
+		FollowerCount:  followerCount,
+		IsFollow:       isfollow,
+		TotalFavorited: totalFavorited,
+		FavoriteCount:  favoritedCount,
 	}
 	return user, nil
 }

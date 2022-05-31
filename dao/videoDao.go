@@ -2,18 +2,18 @@ package dao
 
 import (
 	"TikTok/config"
-	"github.com/dutchcoders/goftp"
 	"io"
+	"log"
 	"time"
 )
 
 type TableVideo struct {
-	ID          int64
-	AuthorId    int64 `copier:"-"` //在拷贝时忽略
-	PlayUrl     string
-	CoverUrl    string
-	PublishTime time.Time `copier:"-"` //在拷贝时忽略
-	Title       string    //视频名，5.23添加
+	Id          int64 `json:"id"`
+	AuthorId    int64
+	PlayUrl     string `json:"play_url"`
+	CoverUrl    string `json:"cover_url"`
+	PublishTime time.Time
+	Title       string `json:"title"` //视频名，5.23添加
 }
 
 // TableName
@@ -42,7 +42,7 @@ func GetVideosByAuthorId(authorId int64) ([]TableVideo, error) {
 // 依据VideoId来获得视频信息
 func GetVideoByVideoId(videoId int64) (TableVideo, error) {
 	var tableVideo TableVideo
-	tableVideo.ID = videoId
+	tableVideo.Id = videoId
 	//Init()
 	result := Db.First(&tableVideo)
 	if result.Error != nil {
@@ -56,7 +56,6 @@ func GetVideoByVideoId(videoId int64) (TableVideo, error) {
 // 依据一个时间，来获取这个时间之前的一些视频
 func GetVideosByLastTime(lastTime time.Time) ([]TableVideo, error) {
 	videos := make([]TableVideo, config.VideoCount)
-	//Init()
 	result := Db.Where("publish_time<?", lastTime).Order("publish_time desc").Limit(config.VideoCount).Find(&videos)
 	if result.Error != nil {
 		return videos, result.Error
@@ -67,63 +66,46 @@ func GetVideosByLastTime(lastTime time.Time) ([]TableVideo, error) {
 // VideoFTP
 // 通过ftp将视频传入服务器
 func VideoFTP(file io.Reader, videoName string) error {
-	//初始化ftp
-	ftp, err := initFTP()
-	if err != nil {
-		return err
-	}
 	//转到video相对路线下
-	err = ftp.Cwd("video")
+	err := MyFTP.Cwd("video")
 	if err != nil {
+		log.Println("转到路径video失败！！！")
+	} else {
+		log.Println("转到路径video成功！！！")
+	}
+	err = MyFTP.Stor(videoName+".mp4", file)
+	if err != nil {
+		log.Println("上传视频失败！！！！！")
 		return err
 	}
-	if err := ftp.Stor(videoName+".mp4", file); err != nil {
-		return err
-	}
+	log.Println("上传视频成功！！！！！")
 	return nil
-}
-
-//初始化FTP
-func initFTP() (*goftp.FTP, error) {
-	//获取到ftp的链接
-	connect, err := goftp.Connect(config.ConConfig)
-	if err != nil {
-		return nil, err
-	}
-	//登录
-	err = connect.Login(config.FtpUser, config.FtpPsw)
-	if err != nil {
-		return nil, err
-	}
-	return connect, nil
 }
 
 // ImageFTP
 // 将图片传入FTP服务器中，但是这里要注意图片的格式随着名字一起给,同时调用时需要自己结束流
 func ImageFTP(file io.Reader, imageName string) error {
-	//初始化ftp
-	ftp, err := initFTP()
-	if err != nil {
-		return err
-	}
 	//转到video相对路线下
-	err = ftp.Cwd("images")
+	err := MyFTP.Cwd("images")
 	if err != nil {
+		log.Println("转到路径images失败！！！")
 		return err
 	}
-	if err := ftp.Stor(imageName, file); err != nil {
+	log.Println("转到路径images成功！！！")
+	if err = MyFTP.Stor(imageName, file); err != nil {
+		log.Println("上传图片失败！！！！！")
 		return err
 	}
+	log.Println("上传图片成功！！！！！")
 	return nil
 }
 
 // Save 保存视频记录
 func Save(videoName string, imageName string, authorId int64, title string) error {
-	//Init()
 	var video TableVideo
 	video.PublishTime = time.Now()
 	video.PlayUrl = config.PlayUrlPrefix + videoName + ".mp4"
-	video.CoverUrl = config.CoverUrlPrefix + imageName
+	video.CoverUrl = config.CoverUrlPrefix + imageName + ".jpg"
 	video.AuthorId = authorId
 	video.Title = title
 	result := Db.Save(&video)
@@ -131,4 +113,17 @@ func Save(videoName string, imageName string, authorId int64, title string) erro
 		return result.Error
 	}
 	return nil
+}
+
+// GetVideoIdsByAuthorId
+// 通过作者id来查询发布的视频id切片集合
+func GetVideoIdsByAuthorId(authorId int64) ([]int64, error) {
+	var id []int64
+	//通过pluck来获得单独的切片
+	result := Db.Model(&TableVideo{}).Where("author_id", authorId).Pluck("id", &id)
+	//如果出现问题，返回对应到空，并且返回error
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return id, nil
 }

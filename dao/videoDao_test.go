@@ -15,7 +15,7 @@ func TestFind(t *testing.T) {
 	var tv TableVideo
 	result := Db.First(&tv)
 	fmt.Println(result.RowsAffected)
-	fmt.Println(tv.ID)
+	fmt.Println(tv.Id)
 	fmt.Println(tv.AuthorId)
 	fmt.Println(tv.CoverUrl)
 	fmt.Println(tv.PlayUrl)
@@ -36,7 +36,7 @@ func TestGetVideosByAuthorId(t *testing.T) {
 
 func TestGetVideoByVideoId(t *testing.T) {
 	Init()
-	data, err := GetVideoByVideoId(1)
+	data, err := GetVideoByVideoId(3)
 	if err != nil {
 		print(err)
 	}
@@ -55,11 +55,12 @@ func TestGetVideosByLastTime(t *testing.T) {
 	}
 }
 func TestVideoFtp(t *testing.T) {
+	InitFTP()
 	//file, err := os.Open("/Users/siyixiong/Movies/bilibil/bilibil20211219/樱花少女.mp4")
 	//if err != nil {
 	//	panic(err)
 	//}
-	//err = VideoFTP(file, "k1")
+	//err = VideoFTP(file, "k2")
 	//if err != nil {
 	//	return
 	//}
@@ -79,4 +80,13 @@ func TestVideoFtp(t *testing.T) {
 
 func TestSave(t *testing.T) {
 	Save("test", "test", 10024, "aaa")
+}
+
+func TestGetVideoIdsByAuthorId(t *testing.T) {
+	Init()
+	id, err := GetVideoIdsByAuthorId(20003)
+	if err != nil {
+		return
+	}
+	fmt.Println(id)
 }

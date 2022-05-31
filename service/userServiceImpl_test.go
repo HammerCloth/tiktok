@@ -14,7 +14,7 @@ func TestGetTableUserList(t *testing.T) {
 
 func TestGetTableUserByUsername(t *testing.T) {
 	impl := UserServiceImpl{}
-	list := impl.GetTableUserByUsername("test22")
+	list := impl.GetTableUserByUsername("test")
 	fmt.Printf("%v", list)
 }
 
@@ -38,6 +38,7 @@ func TestInsertTableUser(t *testing.T) {
 func TestGetUserById(t *testing.T) {
 	impl := UserServiceImpl{
 		FollowService: &FollowServiceImp{},
+		LikeService:   &LikeServiceImpl{},
 	}
 	list, _ := impl.GetUserById(int64(4))
 	fmt.Printf("%v", list)

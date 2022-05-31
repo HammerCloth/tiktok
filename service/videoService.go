@@ -1,19 +1,17 @@
 package service
 
 import (
+	"TikTok/dao"
 	"mime/multipart"
 	"time"
 )
 
 type Video struct {
-	Id            int64  `copier:"ID" json:"id"`    //指定别名
-	Author        User   `copier:"-" json:"author"` //在拷贝时忽略
-	PlayUrl       string `json:"play_url"`
-	CoverUrl      string `json:"cover_url"`
-	FavoriteCount int64  `json:"favorite_count"`
-	CommentCount  int64  `json:"comment_count"`
-	IsFavorite    bool   `json:"is_favorite"`
-	Title         string `json:"title"`
+	dao.TableVideo
+	Author        User  `json:"author"`
+	FavoriteCount int64 `json:"favorite_count"`
+	CommentCount  int64 `json:"comment_count"`
+	IsFavorite    bool  `json:"is_favorite"`
 }
 
 type VideoService interface {
@@ -33,4 +31,8 @@ type VideoService interface {
 	// List
 	// 通过userId来查询对应用户发布的视频，并返回对应的视频切片数组
 	List(userId int64, curId int64) ([]Video, error)
+
+	// GetVideoIdList
+	// 通过一个作者id，返回该用户发布的视频id切片数组
+	GetVideoIdList(userId int64) ([]int64, error)
 }
