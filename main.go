@@ -9,6 +9,19 @@ import (
 
 //如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
 func main() {
+	//关闭log
+	//log.SetOutput(ioutil.Discard)
+	initDeps()
+	//gin
+	r := gin.Default()
+	initRouter(r)
+	//pprof
+	pprof.Register(r)
+	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+}
+
+// 加载项目依赖
+func initDeps() {
 	// 初始化数据库
 	dao.Init()
 	// 初始化FTP服务器链接
@@ -26,13 +39,4 @@ func main() {
 	middleware.InitLikeRabbitMQ()
 	//初始化Comment的消息队列，并开启消费
 	middleware.InitCommentRabbitMQ()
-
-	//gin
-	r := gin.Default()
-	initRouter(r)
-
-	//pprof
-	pprof.Register(r)
-
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
