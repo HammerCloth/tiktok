@@ -8,7 +8,6 @@ import (
 var Ctx = context.Background()
 var RdbFollowers *redis.Client
 var RdbFollowing *redis.Client
-var RdbUser *redis.Client
 var RdbFollowingPart *redis.Client
 
 var RdbLikeUserId *redis.Client  //key:userId,value:VideoId
@@ -28,11 +27,6 @@ func InitRedis() {
 		Addr:     "106.14.75.229:6379",
 		Password: "tiktok",
 		DB:       1, // 关注列表信息信息存入 DB1.
-	})
-	RdbUser = redis.NewClient(&redis.Options{
-		Addr:     "106.14.75.229:6379",
-		Password: "tiktok",
-		DB:       2, // 关注列表和粉丝列表中的用具体信息存入 DB2.
 	})
 	RdbFollowingPart = redis.NewClient(&redis.Options{
 		Addr:     "106.14.75.229:6379",
