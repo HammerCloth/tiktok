@@ -29,6 +29,7 @@ func Count(videoId int64) (int64, error) {
 	log.Println("CommentDao-Count: running") //函数已运行
 	//Init()
 	var count int64
+	//数据库中查询评论数量
 	err := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).Count(&count).Error
 	if err != nil {
 		log.Println("CommentDao-Count: return count failed") //函数返回提示错误信息
@@ -38,6 +39,7 @@ func Count(videoId int64) (int64, error) {
 	return count, nil
 }
 
+//CommentIdList 根据视频id获取评论id 列表
 func CommentIdList(videoId int64) ([]string, error) {
 	var commentIdList []string
 	err := Db.Model(Comment{}).Select("id").Where("video_id = ?", videoId).Find(&commentIdList).Error
@@ -52,7 +54,7 @@ func CommentIdList(videoId int64) ([]string, error) {
 // 2、发表评论
 func InsertComment(comment Comment) (Comment, error) {
 	log.Println("CommentDao-InsertComment: running") //函数已运行
-	//Init()
+	//数据库中插入一条评论信息
 	err := Db.Model(Comment{}).Create(&comment).Error
 	if err != nil {
 		log.Println("CommentDao-InsertComment: return create comment failed") //函数返回提示错误信息
@@ -66,14 +68,14 @@ func InsertComment(comment Comment) (Comment, error) {
 // 3、删除评论，传入评论id
 func DeleteComment(id int64) error {
 	log.Println("CommentDao-DeleteComment: running") //函数已运行
-	//Init()
 	var commentInfo Comment
-	//先查询是否有此评论（正常肯定是有的吧）
+	//先查询是否有此评论
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"id": id, "cancel": config.ValidComment}).First(&commentInfo)
-	if result.RowsAffected == 0 {
+	if result.RowsAffected == 0 { //查询到此评论数量为0则返回无此评论
 		log.Println("CommentDao-DeleteComment: return del comment is not exist") //函数返回提示错误信息
 		return errors.New("del comment is not exist")
 	}
+	//数据库中删除评论-更新评论状态为-1
 	err := Db.Model(Comment{}).Where("id = ?", id).Update("cancel", config.InvalidComment).Error
 	if err != nil {
 		log.Println("CommentDao-DeleteComment: return del comment failed") //函数返回提示错误信息
@@ -87,17 +89,19 @@ func DeleteComment(id int64) error {
 // 4.根据视频id查询所属评论全部列表信息
 func GetCommentList(videoId int64) ([]Comment, error) {
 	log.Println("CommentDao-GetCommentList: running") //函数已运行
-	//Init()
+	//数据库中查询评论信息list
 	var commentList []Comment
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).
 		Order("create_date desc").Find(&commentList)
+	//若此视频没有评论信息
 	if result.RowsAffected == 0 {
 		log.Println("CommentDao-GetCommentList: return there are no comments") //函数返回提示无评论
 		return commentList, errors.New("there are no comments")
 	}
+	//若获取评论列表出错
 	if result.Error != nil {
 		log.Println(result.Error.Error())
-		log.Println("CommentDao-GetCommentList: return get comment list failed") //函数返回提示无评论
+		log.Println("CommentDao-GetCommentList: return get comment list failed") //函数返回提示获取评论错误
 		return commentList, errors.New("get comment list failed")
 	}
 	log.Println("CommentDao-GetCommentList: return commentList success") //函数执行成功，返回正确信息
