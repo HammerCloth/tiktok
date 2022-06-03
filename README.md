@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
-    <img src="images/logo2.jpg" alt="Logo" width="300" height="100">
+    <img src="images/logo1.png" alt="Logo" width="300" height="100">
   </a>
 
 <h3 align="center">抖音简洁版</h3>
@@ -24,40 +24,44 @@
     <a href="https://github.com/HammerCloth/tiktok.git"><strong>探索本项目的文档 »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/HammerCloth/tiktok.git">查看Demo</a>
-    ·
-    <a href="https://github.com/HammerCloth/tiktok.git">报告Bug</a>
-    ·
-    <a href="https://github.com/HammerCloth/tiktok.git">提出新特性</a>
   </p>
   </p>
+
+**Attention:** We always welcome contributors to the project. Before adding your contribution, please carefully read our [Git 分支管理规范](https://ypbg9olvt2.feishu.cn/docs/doccnTMRmh7YgMwL2PgZ5moWUsd)和[注释规范](https://juejin.cn/post/7096881555246678046)。
 
 ## 目录
 
 - [上手指南](#上手指南)
     - [开发前的配置要求](#开发前的配置要求)
     - [安装步骤](#安装步骤)
+    - [演示界面](#演示界面)
 - [文件目录说明](#文件目录说明)
-- [开发的架构](#开发的架构)
+- [开发的整体设计](#开发的整体设计)
+   - [整体的架构图](#整体的架构图)
+   - [数据库的设计](#数据库的设计)
+   - [服务模块的设计](#服务模块的设计)
+     - [视频模块设计](#视频模块的设计)
+     - [点赞模块设计](#点赞模块设计)
+     - [关注模块设计](#关注模块设计)
+     - [用户模块设计](#用户模块设计)
+     - [评论模块设计](#评论模块设计)
 - [部署](#部署)
-- [使用到的框架](#使用到的框架)
-    - [如何参与开源项目](#如何参与开源项目)
+- [使用到的技术](#使用到的技术)
+- [如何参与开源项目](#如何参与开源项目)
 - [版本控制](#版本控制)
 - [贡献者](#贡献者)
 - [鸣谢](#鸣谢)
 
 ### 上手指南
 
-
-
-###### 开发前的配置要求
+#### 开发前的配置要求
 
 1. go 1.18.1环境（详细写？go build配置等？go mod内容中的构件？
 2. MySQL，安装配置说明: https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/
 3. redis
 
 
-###### **安装步骤**
+#### 安装步骤
 
 1. Get a free API Key at [https://example.com](https://example.com)
 2. Clone the repo
@@ -65,6 +69,32 @@
 ```sh
 git clone https://github.com/HammerCloth/tiktok.git
 ```
+#### 演示界面
+**基础功能演示**
+
+<a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/1.png" alt="Logo" width="200" height="400">
+    <img src="images/2.png" alt="Logo" width="200" height="400">
+    <img src="images/3.png" alt="Logo" width="200" height="400">
+    <img src="images/4.png" alt="Logo" width="200" height="400">
+</a>
+
+**拓展功能演示**
+
+<a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/5.png" alt="Logo" width="200" height="400">
+    <img src="images/6.png" alt="Logo" width="200" height="400">
+    <img src="images/7.png" alt="Logo" width="200" height="400">
+    <img src="images/8.png" alt="Logo" width="200" height="400">
+</a>
+
+**设置服务端地址**
+
+<a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/9.png" alt="Logo" width="200" height="400">
+    <img src="images/10.png" alt="Logo" width="200" height="400">
+    <img src="images/11.png" alt="Logo" width="200" height="400">
+</a>
 
 ### 文件目录说明
 
@@ -72,64 +102,50 @@ git clone https://github.com/HammerCloth/tiktok.git
 tiktok 
 ├── /.idea/
 ├── /config/
-│  └── config.go
 ├── /controller/
-│  ├── commentController.go
-│  ├── followController.go
-│  ├── likeController.go
-│  ├── userController.go
-│  └── videoController.go
 ├── /dao/
-│  ├── commentDao.go
-│  ├── commentDao_test.go
-│  ├── followDao.go
-│  ├── followDao_test.go
-│  ├── likeDao.go
-│  ├── likeDao_test.go
-│  ├── userDao.go
-│  ├── userDao_test.go
-│  ├── videoDao.go
-│  └── videoDao_test.go
 ├── /images/
 ├── /middleware/
-│  ├── auth.go
-│  ├── authBody.go
-│  ├── commentMQ.go
-│  ├── ffmpeg.go
-│  ├── followMQ.go
-│  ├── likeMQ.go
-│  ├── rabbitMQ.go
-│  └── redis.go
 ├── /service/
-│  ├── commentService.go
-│  ├── commentServiceImpl.go
-│  ├── commentServiceImpl_test.go
-│  ├── commentSub.go
-│  ├── followService.go
-│  ├── followServiceImpl.go
-│  ├── followServiceImpl_test.go
-│  ├── followSub.go
-│  ├── likeService.go
-│  ├── likeServiceImpl.go
-│  ├── likeServiceImpl_test.go
-│  ├── likeSub.go
-│  ├── videoService.go
-│  ├── videoServiceImpl.go
-│  ├── videoServiceImpl_test.go
-│  └── videoSub.go
 ├── .gitignore
 ├── /go.mod/
-│  └── go.sum
 ├── LICENSE
 ├── main.go
 ├── README.md
 └── router.go
 ```
 
+### 开发的整体设计
+#### 整体的架构图
 
-### 开发的整体架构图
+#### 数据库的设计
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/mysql.png" alt="Logo" width="800" height="600">
+  </a>
+</p>
 
-请阅读[ARCHITECTURE.md](https://github.com/shaojintian/Best_README_template/blob/master/ARCHITECTURE.md) 查阅为该项目的架构。
+#### 服务模块的设计
+
+###### 视频模块的设计
+视频模块包括视频Feed流获取、视频投稿和获取用户投稿列表。
+详情请阅读[视频模块设计说明](https://bytedancecampus1.feishu.cn/docs/doccntmcunjHSMzVUNEhGbxjxJh) 查阅为该模块的详细设计。
+
+###### 点赞模块的设计
+点赞模块包括点赞视频、取消赞视频和获取点赞列表。
+详情请阅读[点赞模块设计说明](https://bytedancecampus1.feishu.cn/docs/doccn13iJgTIAebIPpMiRqb0Hwb) 查阅为该模块的详细设计。
+
+###### 关注模块的设计
+关注模块包括关注、取关、获取关注列表、获取粉丝列表四个基本功能。
+详情请阅读[关注模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccnOsdm29SufPJkDfRs7tLHgx) 查阅为该模块的详细设计。
+
+###### 用户模块的设计
+用户与安全模块包括用户注册、用户登录和用户信息三个部分
+详情请阅读[用户模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccn1vusmV9oN1ukTCyLpbJ46f) 查阅为该模块的详细设计。
+
+###### 评论模块的设计
+评论模块包括发表评论、删除评论和查看评论。
+详情阅读[评论模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccnDqfcZJW4tTD409NGlYfvCb) 查阅为该模块的详细设计。
 
 ### 部署
 
@@ -137,15 +153,14 @@ tiktok
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 ```
 
-### 使用到的框架
+### 使用到的技术
 
-- [gin](https://getbootstrap.com)
-- [xxxxxxx](https://jquery.com)
-- [xxxxxxx](https://laravel.com)
+- [GIN](https://gin-gonic.com/docs/)
+- [MySQL](https://dev.mysql.com/doc/)
+- [Redis](https://redis.io/docs/)
+- [RabbitMQ](https://www.rabbitmq.com/documentation.html)
 
-
-
-#### 如何参与开源项目
+### 如何参与开源项目
 
 贡献使开源社区成为一个学习、激励和创造的绝佳场所。你所作的任何贡献都是**非常感谢**的。
 
