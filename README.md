@@ -100,9 +100,7 @@ git clone https://github.com/HammerCloth/tiktok.git
 </a>
 
 #### 演示视频
-<a href="http://43.138.25.60/19417075-530f-4d55-bfc9-634b2306a8ab.mp4">
-<img src="images/video.jpg" alt="Logo" width="500" height="800">
-</a>
+[![Watch the video](images/video.jpg)](http://43.138.25.60/19417075-530f-4d55-bfc9-634b2306a8ab.mp4)
 
 ### 文件目录说明
 
