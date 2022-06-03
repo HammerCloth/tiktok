@@ -52,8 +52,10 @@
 
 ###### 开发前的配置要求
 
-1. xxxxx x.x.x
-2. xxxxx x.x.x
+1. go 1.18.1环境（详细写？go build配置等？go mod内容中的构件？
+2. MySQL，安装配置说明: https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/
+3. redis
+
 
 ###### **安装步骤**
 
@@ -66,26 +68,64 @@ git clone https://github.com/HammerCloth/tiktok.git
 
 ### 文件目录说明
 
-eg:
-
 ```
-filetree 
-├── ARCHITECTURE.md
-├── LICENSE.txt
+tiktok 
+├── /.idea/
+├── /config/
+│  └── config.go
+├── /controller/
+│  ├── commentController.go
+│  ├── followController.go
+│  ├── likeController.go
+│  ├── userController.go
+│  └── videoController.go
+├── /dao/
+│  ├── commentDao.go
+│  ├── commentDao_test.go
+│  ├── followDao.go
+│  ├── followDao_test.go
+│  ├── likeDao.go
+│  ├── likeDao_test.go
+│  ├── userDao.go
+│  ├── userDao_test.go
+│  ├── videoDao.go
+│  └── videoDao_test.go
+├── /images/
+├── /middleware/
+│  ├── auth.go
+│  ├── authBody.go
+│  ├── commentMQ.go
+│  ├── ffmpeg.go
+│  ├── followMQ.go
+│  ├── likeMQ.go
+│  ├── rabbitMQ.go
+│  └── redis.go
+├── /service/
+│  ├── commentService.go
+│  ├── commentServiceImpl.go
+│  ├── commentServiceImpl_test.go
+│  ├── commentSub.go
+│  ├── followService.go
+│  ├── followServiceImpl.go
+│  ├── followServiceImpl_test.go
+│  ├── followSub.go
+│  ├── likeService.go
+│  ├── likeServiceImpl.go
+│  ├── likeServiceImpl_test.go
+│  ├── likeSub.go
+│  ├── videoService.go
+│  ├── videoServiceImpl.go
+│  ├── videoServiceImpl_test.go
+│  └── videoSub.go
+├── .gitignore
+├── /go.mod/
+│  └── go.sum
+├── LICENSE
+├── main.go
 ├── README.md
-├── /account/
-├── /bbs/
-├── /docs/
-│  ├── /rules/
-│  │  ├── backend.txt
-│  │  └── frontend.txt
-├── manage.py
-├── /oa/
-├── /static/
-├── /templates/
-├── useless.md
-└── /util/
+└── router.go
 ```
+
 
 ### 开发的整体架构图
 
@@ -99,7 +139,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 
 ### 使用到的框架
 
-- [xxxxxxx](https://getbootstrap.com)
+- [gin](https://getbootstrap.com)
 - [xxxxxxx](https://jquery.com)
 - [xxxxxxx](https://laravel.com)
 
