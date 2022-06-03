@@ -1,4 +1,4 @@
-# tiktok-dev
+# tiktok
 
 <!-- PROJECT SHIELDS -->
 
@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="images/logo2.jpg" alt="Logo" width="300" height="100">
   </a>
 
 <h3 align="center">抖音简洁版</h3>
@@ -41,10 +41,9 @@
 - [开发的架构](#开发的架构)
 - [部署](#部署)
 - [使用到的框架](#使用到的框架)
-- [贡献者](#贡献者)
     - [如何参与开源项目](#如何参与开源项目)
 - [版本控制](#版本控制)
-- [作者](#作者)
+- [贡献者](#贡献者)
 - [鸣谢](#鸣谢)
 
 ### 上手指南
@@ -88,7 +87,7 @@ filetree
 └── /util/
 ```
 
-### 开发的架构
+### 开发的整体架构图
 
 请阅读[ARCHITECTURE.md](https://github.com/shaojintian/Best_README_template/blob/master/ARCHITECTURE.md) 查阅为该项目的架构。
 
@@ -104,9 +103,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 - [xxxxxxx](https://jquery.com)
 - [xxxxxxx](https://laravel.com)
 
-### 贡献者
 
-请阅读**CONTRIBUTING.md** 查阅为该项目做出贡献的开发者。
 
 #### 如何参与开源项目
 
@@ -122,13 +119,14 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 
 该项目使用Git进行版本管理。您可以在repository参看当前可用版本。
 
-### 作者
+### 贡献者
+- 司一雄 邮箱:18552541076@163.com
+- 刘宗舟 邮箱:1245314855@qq.com
+- 蒋宇栋 邮箱:jiangyudong123@qq.com
+- 李思源 邮箱:yuanlaisini_002@qq.com
+- 李林森 邮箱:1412837463@qq.com
 
-xxx@xxxx
-
-知乎:xxxx &ensp; qq:xxxxxx
-
-*您也可以在贡献者名单中参看所有参与该项目的开发者。*
+*您也可以查阅仓库为该项目做出贡献的开发者。*
 
 ### 版权说明
 
@@ -139,8 +137,6 @@ xxx@xxxx
 - [字节跳动后端青训营](https://youthcamp.bytedance.com/)
 
 <!-- links -->
-
-[your-project-path]:HammerCloth/tiktok
 
 [license-shield]: https://img.shields.io/github/license/mrxuexi/tiktok.svg?style=flat-square
 
