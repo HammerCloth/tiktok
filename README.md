@@ -35,6 +35,7 @@
     - [开发前的配置要求](#开发前的配置要求)
     - [安装步骤](#安装步骤)
     - [演示界面](#演示界面)
+    - [演示视频](#演示视频)
 - [文件目录说明](#文件目录说明)
 - [开发的整体设计](#开发的整体设计)
    - [整体的架构图](#整体的架构图)
@@ -45,6 +46,7 @@
      - [关注模块设计](#关注模块设计)
      - [用户模块设计](#用户模块设计)
      - [评论模块设计](#评论模块设计)
+- [性能测试](#性能测试)
 - [部署](#部署)
 - [使用到的技术](#使用到的技术)
 - [如何参与开源项目](#如何参与开源项目)
@@ -59,7 +61,8 @@
 1. go 1.18.1环境（详细写？go build配置等？go mod内容中的构件？
 2. MySQL，安装配置说明: https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/
 3. redis
-
+4. [最新版抖音客户端软件](https://pan.baidu.com/s/1kXjvYWH12uhvFBARRMBCGg?pwd=6cos)
+5. 
 
 #### 安装步骤
 
@@ -94,6 +97,11 @@ git clone https://github.com/HammerCloth/tiktok.git
     <img src="images/9.png" alt="Logo" width="200" height="400">
     <img src="images/10.png" alt="Logo" width="200" height="400">
     <img src="images/11.png" alt="Logo" width="200" height="400">
+</a>
+
+#### 演示视频
+<a href="http://43.138.25.60/19417075-530f-4d55-bfc9-634b2306a8ab.mp4">
+<img src="images/video.jpg" alt="Logo" width="500" height="800">
 </a>
 
 ### 文件目录说明
@@ -146,6 +154,8 @@ tiktok
 ###### 评论模块的设计
 评论模块包括发表评论、删除评论和查看评论。
 详情阅读[评论模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccnDqfcZJW4tTD409NGlYfvCb) 查阅为该模块的详细设计。
+
+### 性能测试
 
 ### 部署
 
