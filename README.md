@@ -59,16 +59,19 @@
 
 #### 开发前的配置要求
 
-1. go 1.18.1环境（详细写？go build配置等？go mod内容中的构件？
-2. MySQL，安装配置说明: https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/
-3. redis
-4. [最新版抖音客户端软件](https://pan.baidu.com/s/1kXjvYWH12uhvFBARRMBCGg?pwd=6cos)
-5. 
+1. go 1.18.1
+2. MySQL(数据库sql文件在config包中)
+3. 搭建Redis、RabbitMQ环境
+4. 配置静态资源服务器：安装Nginx、vsftpd、ffmpeg（相关配置文件在config包中）
+5. [最新版抖音客户端软件](https://pan.baidu.com/s/1kXjvYWH12uhvFBARRMBCGg?pwd=6cos)
+
+
 
 #### 安装步骤
-
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. 下载源码
+2. 配置SSH、FTP、Redis、静态服务器地址等相关参数
+3. 启动服务
+4. 在客户端配置相关地址服务端地址即可
 
 ```sh
 git clone https://github.com/HammerCloth/tiktok.git
@@ -108,12 +111,12 @@ git clone https://github.com/HammerCloth/tiktok.git
 ```
 tiktok 
 ├── /.idea/
-├── /config/
-├── /controller/
-├── /dao/
-├── /images/
-├── /middleware/
-├── /service/
+├── /config/ 配置文件包
+├── /controller/ 控制器包
+├── /dao/ 数据库访问
+├── /images/ 图片引用
+├── /middleware/ 中间件
+├── /service/ 服务层
 ├── .gitignore
 ├── /go.mod/
 ├── LICENSE
@@ -175,6 +178,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 - [MySQL](https://dev.mysql.com/doc/)
 - [Redis](https://redis.io/docs/)
 - [RabbitMQ](https://www.rabbitmq.com/documentation.html)
+
 
 ### 未来展望
 利用dubbogo来完成分布式，貔貅作为网关，Nacos作为注册中心，将五个模块分别布置到不同的服务器上，以rpc调用的方式来调用当前模块依赖其他模块的方法，做到分布式处理与解耦。
