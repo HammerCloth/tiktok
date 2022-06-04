@@ -19,7 +19,6 @@
 
 <h3 align="center">抖音简洁版</h3>
   <p align="center">
-    xxxxxxxxxxx(写这个版本的框架)
     <br />
     <a href="https://github.com/HammerCloth/tiktok.git"><strong>探索本项目的文档 »</strong></a>
     <br />
@@ -40,6 +39,7 @@
 - [开发的整体设计](#开发的整体设计)
    - [整体的架构图](#整体的架构图)
    - [数据库的设计](#数据库的设计)
+   - [Redis架构的设计](#Redis架构的设计)
    - [服务模块的设计](#服务模块的设计)
      - [视频模块设计](#视频模块的设计)
      - [点赞模块设计](#点赞模块设计)
@@ -136,6 +136,13 @@ tiktok
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
     <img src="images/mysql.jpg" alt="Logo" width="800" height="600">
+  </a>
+</p>
+
+#### Redis架构的设计
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/redis.jpg" alt="Logo" width="1000" height="600">
   </a>
 </p>
 
