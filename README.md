@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
-    <img src="images/logo1.png" alt="Logo" width="300" height="100">
+    <img src="images/logo2.png" alt="Logo" width="400" height="100">
   </a>
 
 <h3 align="center">抖音简洁版</h3>
@@ -100,7 +100,7 @@ git clone https://github.com/HammerCloth/tiktok.git
 </a>
 
 #### 演示视频
-[![Watch the video](images/video.jpg)](http://43.138.25.60/19417075-530f-4d55-bfc9-634b2306a8ab.mp4)
+[![Watch the video](images/video.png)](http://43.138.25.60/tiktok.mp4)
 
 ### 文件目录说明
 
@@ -127,7 +127,7 @@ tiktok
 #### 数据库的设计
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
-    <img src="images/mysql.png" alt="Logo" width="800" height="600">
+    <img src="images/mysql.jpg" alt="Logo" width="800" height="600">
   </a>
 </p>
 
@@ -154,7 +154,7 @@ tiktok
 详情阅读[评论模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccnDqfcZJW4tTD409NGlYfvCb) 查阅为该模块的详细设计。
 
 ### 性能测试
-
+包含各个接口的压力测试，详情请阅读[压测报告](https://bytedancecampus1.feishu.cn/docs/doccnoDHHJ84k94G1I2TxHj9Udh) 获得具体的压力数据。
 ### 部署
 
 ```shell
