@@ -124,6 +124,10 @@ tiktok
 
 ### 开发的整体设计
 #### 整体的架构图
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/framework.jpg" alt="Logo" width="1000" height="500">
+  </a>
 
 #### 数据库的设计
 <p align="center">
@@ -171,11 +175,22 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 ```
 
 ### 使用到的技术
+框架相关：
+- [Gin](https://gin-gonic.com/docs/)
+- [Gorm](https://gorm.io/docs/)
 
-- [GIN](https://gin-gonic.com/docs/)
-- [MySQL](https://dev.mysql.com/doc/)
+服务器相关：
+- [Nginx](https://www.nginx-cn.net/)
+- [vsfpd](https://www.linuxfromscratch.org/blfs/view/svn/server/vsftpd.html)
+- [ffmpeg](https://ffmpeg.org/documentation.html)
+- [goftp](http://t.zoukankan.com/lvdongjie-p-9554849.html)
+
+中间件相关：
 - [Redis](https://redis.io/docs/)
 - [RabbitMQ](https://www.rabbitmq.com/documentation.html)
+
+数据库：
+- [MySQL](https://dev.mysql.com/doc/)
 
 ### 未来展望
 利用dubbogo来完成分布式，貔貅作为网关，Nacos作为注册中心，将五个模块分别布置到不同的服务器上，以rpc调用的方式来调用当前模块依赖其他模块的方法，做到分布式处理与解耦。
