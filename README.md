@@ -164,8 +164,7 @@ tiktok
 </a>
 
 同时包含各个接口的压力测试，详情请阅读[压测报告](https://bytedancecampus1.feishu.cn/docs/doccnoDHHJ84k94G1I2TxHj9Udh) 获得具体的压力数据。
-### 部署
-
+### 编译项目到linux
 ```shell
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 ```
