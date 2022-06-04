@@ -297,7 +297,8 @@ func (f *FollowServiceImp) getFollowing(userId int64) ([]User, error) {
 
 // GetFollowing 根据当前用户id来查询他的关注者列表。
 func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
-	// 先查Redis，看是否有全部关注信息。
+	return getFollowing(userId)
+	/*// 先查Redis，看是否有全部关注信息。
 	followingIdStr := strconv.Itoa(int(userId))
 	if cnt, _ := middleware.RdbFollowers.SCard(middleware.Ctx, followingIdStr).Result(); 0 == cnt {
 		users, _ := f.getFollowing(userId)
@@ -331,7 +332,7 @@ func (f *FollowServiceImp) GetFollowing(userId int64) ([]User, error) {
 	}
 	wg.Wait()
 	log.Println("从Redis中查询到所有关注者。")
-	return users, nil
+	return users, nil*/
 }
 
 // 设置Redis关于所有关注的信息。
@@ -349,7 +350,7 @@ func setRedisFollowing(userId int64, users []User) {
 		middleware.RdbFollowing.SAdd(middleware.Ctx, followingIdStr, user.Id)
 
 		middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingIdStr, user.Id)
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, followingIdStr, -1)
+		middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingIdStr, -1)
 		// 随机设置过期时间
 		middleware.RdbFollowingPart.Expire(middleware.Ctx, followingIdStr, config.ExpireTime+
 			time.Duration((i%10)<<8))
@@ -357,7 +358,7 @@ func setRedisFollowing(userId int64, users []User) {
 }
 
 // 从数据库查所有关注用户信息。
-/*func getFollowing(userId int64) ([]User, error) {
+func getFollowing(userId int64) ([]User, error) {
 	users := make([]User, 1)
 	// 查询出错。
 	if err := dao.Db.Raw("select id,`name`,"+
@@ -375,7 +376,7 @@ func setRedisFollowing(userId int64, users []User) {
 	}
 	// 返回关注对象列表。
 	return users, nil
-}*/
+}
 
 // GetFollowers 根据当前用户id来查询他的粉丝列表。
 
@@ -421,7 +422,8 @@ func (f *FollowServiceImp) getUserById(ids []int64, userId int64) ([]User, error
 
 // GetFollowers 根据当前用户id来查询他的粉丝列表。
 func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
-	// 先查Redis，看是否有全部粉丝信息。
+	return getFollowers(userId)
+	/*// 先查Redis，看是否有全部粉丝信息。
 	followersIdStr := strconv.Itoa(int(userId))
 	if cnt, _ := middleware.RdbFollowers.SCard(middleware.Ctx, followersIdStr).Result(); 0 == cnt {
 		users, _ := f.getFollowers(userId)
@@ -454,11 +456,11 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 		i++
 	}
 	wg.Wait()
-	return users, nil
+	return users, nil*/
 }
 
 // 从数据库查所有粉丝信息。
-/*func getFollowers(userId int64) ([]User, error) {
+func getFollowers(userId int64) ([]User, error) {
 	users := make([]User, 1)
 
 	if err := dao.Db.Raw("select T.id,T.name,T.follow_cnt follow_count,T.follower_cnt follower_count,if(f.cancel is null,'false','true') is_follow"+
@@ -482,7 +484,7 @@ func (f *FollowServiceImp) GetFollowers(userId int64) ([]User, error) {
 	}
 	// 查询成功。
 	return users, nil
-}*/
+}
 
 // 设置Redis关于所有粉丝的信息
 func setRedisFollowers(userId int64, users []User) {

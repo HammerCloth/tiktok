@@ -10,12 +10,16 @@ import (
 	"time"
 )
 
+// CommentListResponse
+// 评论列表返回参数
 type CommentListResponse struct {
 	StatusCode  int32                 `json:"status_code"`
 	StatusMsg   string                `json:"status_msg,omitempty"`
 	CommentList []service.CommentInfo `json:"comment_list,omitempty"`
 }
 
+// CommentActionResponse
+// 发表评论返回参数
 type CommentActionResponse struct {
 	StatusCode int32               `json:"status_code"`
 	StatusMsg  string              `json:"status_msg,omitempty"`
@@ -67,6 +71,7 @@ func CommentAction(c *gin.Context) {
 	commentService := new(service.CommentServiceImpl)
 	if actionType == 1 { //actionType为1，则进行发表评论操作
 		content := c.Query("comment_text")
+		//发表评论数据准备
 		var sendComment dao.Comment
 		sendComment.UserId = userId
 		sendComment.VideoId = videoId
@@ -135,9 +140,9 @@ func CommentList(c *gin.Context) {
 	id, _ := c.Get("userId")
 	userid, _ := id.(string)
 	userId, err := strconv.ParseInt(userid, 10, 64)
-	//userId, err := strconv.ParseInt(c.Query("userId"), 10, 64)
-	log.Printf("err:%v", err)
-	log.Printf("userId:%v", userId)
+	//log.Printf("err:%v", err)
+	//log.Printf("userId:%v", userId)
+
 	//获取videoId
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	//错误处理

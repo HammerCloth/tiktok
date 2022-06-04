@@ -30,6 +30,7 @@ func InitSSH() {
 		Timeout:         5 * time.Second, //ssh 连接time out 时间一秒钟, 如果ssh验证错误 会在一秒内返回
 		User:            config.UserSSH,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //这个可以, 但是不够安全
+
 		//HostKeyCallback: hostKeyCallBackFunc(h.Host),
 	}
 	if config.TypeSSH == "password" {
@@ -46,6 +47,7 @@ func InitSSH() {
 	Ffchan = make(chan Ffmsg, config.MaxMsgCount)
 	//建立携程用于派遣
 	go dispatcher()
+	go keepAlive()
 }
 
 //通过增加携程，将获取的信息进行派遣，当信息处理失败之后，还会将处理方式放入通道形成的队列中
@@ -78,4 +80,11 @@ func Ffmpeg(videoName string, imageName string) error {
 	}
 	//fmt.Println("命令输出:", string(combo))
 	return nil
+}
+
+//维持长链接
+func keepAlive() {
+	time.Sleep(time.Duration(config.SSHHeartbeatTime) * time.Second)
+	session, _ := ClientSSH.NewSession()
+	session.Close()
 }
