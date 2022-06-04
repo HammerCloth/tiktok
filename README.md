@@ -154,7 +154,15 @@ tiktok
 详情阅读[评论模块的设计说明](https://bytedancecampus1.feishu.cn/docs/doccnDqfcZJW4tTD409NGlYfvCb) 查阅为该模块的详细设计。
 
 ### 性能测试
-包含各个接口的压力测试，详情请阅读[压测报告](https://bytedancecampus1.feishu.cn/docs/doccnoDHHJ84k94G1I2TxHj9Udh) 获得具体的压力数据。
+通过命令 go tool pprof -http=:6060 "http://localhost:8080/debug/pprof/profile?seconds=120" 生成了两个版本的火焰图，左图为v1.0，右图为v1.2版本，通过对比两张详细火焰图，优化后的相同方法调用时间更短（添加了相应的中间件）
+
+<p align="center">
+<a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/1.0.png" alt="Logo" width="500" height="300">
+    <img src="images/1.2.png" alt="Logo" width="500" height="300">
+</a>
+
+同时包含各个接口的压力测试，详情请阅读[压测报告](https://bytedancecampus1.feishu.cn/docs/doccnoDHHJ84k94G1I2TxHj9Udh) 获得具体的压力数据。
 ### 部署
 
 ```shell
