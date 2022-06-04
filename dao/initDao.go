@@ -51,4 +51,11 @@ func InitFTP() {
 		log.Printf("FTP登录失败！！！")
 	}
 	log.Printf("FTP登录成功！！！")
+	//维持长链接
+	go keepAlive()
+}
+
+func keepAlive() {
+	time.Sleep(time.Duration(config.HeartbeatTime) * time.Second)
+	MyFTP.Noop()
 }

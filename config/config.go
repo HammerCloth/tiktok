@@ -19,6 +19,7 @@ const VideoCount = 5
 const ConConfig = "43.138.25.60:21"
 const FtpUser = "ftpuser"
 const FtpPsw = "424193726"
+const HeartbeatTime = 2 * 60
 
 // PlayUrlPrefix 存储的图片和视频的链接
 const PlayUrlPrefix = "http://43.138.25.60/"
@@ -31,6 +32,7 @@ const PasswordSSH = "424193726"
 const TypeSSH = "password"
 const PortSSH = 22
 const MaxMsgCount = 100
+const SSHHeartbeatTime = 10 * 60
 
 const ValidComment = 0   //评论状态：有效
 const InvalidComment = 1 //评论状态：取消
