@@ -5,7 +5,6 @@ import (
 	"TikTok/dao"
 	"TikTok/middleware"
 	"log"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -174,73 +173,72 @@ func (c CommentServiceImpl) DelComment(commentId int64) error {
 func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo, error) {
 	log.Println("CommentService-GetList: running") //函数已运行
 
-	/*
-		//法一、使用SQL语句查询评论列表及用户信息，嵌套user信息。且导致提高耦合性。
-		//1.查找CommentData结构体的信息
-		commentData := make([]CommentData, 1)
-		err := dao.Db.Raw("select T.cid id,T.user_id user_id,T.`name`,T.follow_count,T.follower_count,"+
-			"\nif(f.cancel is null,'false','true') is_follow,"+
-			"\nT.comment_text content,T.create_date"+
-			"\nfrom follows f right join\n("+
-			"\n\tselect cid,vid,id user_id,`name`,comment_text,create_date,"+
-			"\n\tcount(if(tag = 'follower' and cancel is not null,1,null)) follower_count,"+
-			"\n\tcount(if(tag = 'follow' and cancel is not null,1,null)) follow_count"+
-			"\n\tfrom\n\t("+
-			"\n\t\tselect c.id cid,u.id,c.video_id vid,`name`,f.cancel,comment_text,create_date,'follower' tag"+
-			"\n\t\tfrom comments c join users u on c.user_id = u.id and c.cancel = 0"+
-			"\n\t\tleft join follows f on u.id = f.user_id and f.cancel = 0"+
-			"\n\t\tunion all"+
-			"\n\t\tselect c.id cid,u.id,c.video_id vid,`name`,f.cancel,comment_text,create_date,'follow' tag"+
-			"\n\t\tfrom comments c join users u on c.user_id = u.id and c.cancel = 0"+
-			"\n\t\tleft join follows f on u.id = f.follower_id and f.cancel = 0"+
-			"\n\t\t) T\n\t\tgroup by cid,vid,id,`name`,comment_text,create_date"+
-			"\n) T on f.follower_id = T.user_id and f.cancel = 0 and f.user_id = ?"+
-			"\nwhere vid = ? group by cid order by create_date desc", userId, videoId).Scan(&commentData).Error
+	//法一、使用SQL语句查询评论列表及用户信息，嵌套user信息。且导致提高耦合性。
+	//1.查找CommentData结构体的信息
+	commentData := make([]CommentData, 1)
+	err := dao.Db.Raw("select T.cid id,T.user_id user_id,T.`name`,T.follow_count,T.follower_count,"+
+		"\nif(f.cancel is null,'false','true') is_follow,"+
+		"\nT.comment_text content,T.create_date"+
+		"\nfrom follows f right join\n("+
+		"\n\tselect cid,vid,id user_id,`name`,comment_text,create_date,"+
+		"\n\tcount(if(tag = 'follower' and cancel is not null,1,null)) follower_count,"+
+		"\n\tcount(if(tag = 'follow' and cancel is not null,1,null)) follow_count"+
+		"\n\tfrom\n\t("+
+		"\n\t\tselect c.id cid,u.id,c.video_id vid,`name`,f.cancel,comment_text,create_date,'follower' tag"+
+		"\n\t\tfrom comments c join users u on c.user_id = u.id and c.cancel = 0"+
+		"\n\t\tleft join follows f on u.id = f.user_id and f.cancel = 0"+
+		"\n\t\tunion all"+
+		"\n\t\tselect c.id cid,u.id,c.video_id vid,`name`,f.cancel,comment_text,create_date,'follow' tag"+
+		"\n\t\tfrom comments c join users u on c.user_id = u.id and c.cancel = 0"+
+		"\n\t\tleft join follows f on u.id = f.follower_id and f.cancel = 0"+
+		"\n\t\t) T\n\t\tgroup by cid,vid,id,`name`,comment_text,create_date"+
+		"\n) T on f.follower_id = T.user_id and f.cancel = 0 and f.user_id = ?"+
+		"\nwhere vid = ? group by cid order by create_date desc", userId, videoId).Scan(&commentData).Error
 
-		if nil != err {
-			log.Println("CommentService-GetList: sql error") //sql查询出错
-			return nil, err
+	if nil != err {
+		log.Println("CommentService-GetList: sql error") //sql查询出错
+		return nil, err
+	}
+	//2.拼接
+	commentInfoList := make([]CommentInfo, 0, len(commentData))
+	for _, comment := range commentData {
+		userData := User{
+			Id:            comment.Id,
+			Name:          comment.Name,
+			FollowCount:   comment.FollowCount,
+			FollowerCount: comment.FollowerCount,
+			IsFollow:      comment.IsFollow,
 		}
-		//2.拼接
-		commentInfoList := make([]CommentInfo, 0, len(commentData))
-		for _, comment := range commentData {
-			userData := User{
-				Id:            comment.Id,
-				Name:          comment.Name,
-				FollowCount:   comment.FollowCount,
-				FollowerCount: comment.FollowerCount,
-				IsFollow:      comment.IsFollow,
-			}
-			commentData := CommentInfo{
-				Id:         comment.Id,
-				UserInfo:   userData,
-				Content:    comment.Content,
-				CreateDate: comment.CreateDate.Format(config.DateTime),
-			}
-			//3.组装list
-			commentInfoList = append(commentInfoList, commentData)
+		commentData := CommentInfo{
+			Id:         comment.Id,
+			UserInfo:   userData,
+			Content:    comment.Content,
+			CreateDate: comment.CreateDate.Format(config.DateTime),
 		}
+		//3.组装list
+		commentInfoList = append(commentInfoList, commentData)
+	}
 
-		//查询redis中是否有此记录，无则加入
-		//将评论id切片存入redis，
-		go func() {
-			//评论id循环存入redis，
-			for _, _comment := range commentData {
-				insertRedisVideoCommentId(strconv.Itoa(int(videoId)), strconv.Itoa(int(_comment.Id)))
-			}
-			log.Println("comment list save ids in redis")
-		}()
+	//查询redis中是否有此记录，无则加入
+	//将评论id切片存入redis，
+	go func() {
+		//评论id循环存入redis，
+		for _, _comment := range commentData {
+			insertRedisVideoCommentId(strconv.Itoa(int(videoId)), strconv.Itoa(int(_comment.Id)))
+		}
+		log.Println("comment list save ids in redis")
+	}()
 
-		log.Println("CommentService-GetList: get list success") //成功查询到评论列表
-		return commentInfoList, nil*/
+	log.Println("CommentService-GetList: get list success") //成功查询到评论列表
+	return commentInfoList, nil
 
 	//法二：调用dao，先查评论，再循环查用户信息：
 	//1.先查询评论列表信息
-	commentList, err := dao.GetCommentList(videoId)
+	/*commentList, err := dao.GetCommentList(videoId)
 	if err != nil {
 		log.Println("CommentService-GetList: return err: " + err.Error()) //函数返回提示错误信息
 		return nil, err
-	}
+	}*/
 	/*
 		//2.根据查询到的评论用户id和当前用户id，查询评论用户信息
 		impl := UserServiceImpl{
@@ -268,7 +266,7 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 		}*/
 
 	//提前定义好切片长度
-	commentInfoList := make([]CommentInfo, len(commentList))
+	/*commentInfoList := make([]CommentInfo, len(commentList))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(commentList))
@@ -290,7 +288,7 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 	//评论排序-按照主键排序
 	sort.Sort(CommentSlice(commentInfoList))
 	log.Println("CommentService-GetList: return list success") //函数执行成功，返回正确信息
-	return commentInfoList, nil
+	return commentInfoList, nil*/
 }
 
 //在redis中存储video_id对应的comment_id 、 comment_id对应的video_id
