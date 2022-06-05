@@ -40,6 +40,7 @@
    - [整体的架构图](#整体的架构图)
    - [数据库的设计](#数据库的设计)
    - [Redis架构的设计](#Redis架构的设计)
+   - [RabbitMQ架构的设计](#RabbitMQ架构的设计)
    - [服务模块的设计](#服务模块的设计)
      - [视频模块设计](#视频模块的设计)
      - [点赞模块设计](#点赞模块设计)
@@ -145,6 +146,13 @@ tiktok
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
     <img src="images/redis.jpg" alt="Logo" width="1000" height="600">
+  </a>
+</p>
+
+#### RabbitMQ架构的设计
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/rabbitmq.jpg" alt="Logo" width="1000" height="600">
   </a>
 </p>
 
