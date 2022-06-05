@@ -190,7 +190,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 
 服务器相关：
 - [Nginx](https://www.nginx-cn.net/)
-- [vsfpd](https://www.linuxfromscratch.org/blfs/view/svn/server/vsftpd.html)
+- [vsftpd](https://www.linuxfromscratch.org/blfs/view/svn/server/vsftpd.html)
 - [ffmpeg](https://ffmpeg.org/documentation.html)
 - [goftp](http://t.zoukankan.com/lvdongjie-p-9554849.html)
 
