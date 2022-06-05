@@ -50,6 +50,8 @@
 - [部署](#部署)
 - [使用到的技术](#使用到的技术)
 - [未来展望](#未来展望)
+  - [分布式服务](#分布式服务)
+  - [推荐视频展望](#推荐视频展望)
 - [如何参与开源项目](#如何参与开源项目)
 - [版本控制](#版本控制)
 - [贡献者](#贡献者)
@@ -202,12 +204,23 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 - [MySQL](https://dev.mysql.com/doc/)
 
 ### 未来展望
+#### 分布式服务
 利用dubbogo来完成分布式，貔貅作为网关，Nacos作为注册中心，将五个模块分别布置到不同的服务器上，以rpc调用的方式来调用当前模块依赖其他模块的方法，做到分布式处理与解耦。
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
     <img src="images/future.png" alt="Logo" width="1000" height="600">
   </a>
 </p>
+
+#### 推荐视频展望
+队伍创新推荐算法
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/recommend.jpg" alt="Logo" width="1000" height="600">
+  </a>
+</p>
+
+详情请阅读[视频推荐展望](https://bytedancecampus1.feishu.cn/docx/doxcnVIK62rWgR0iE49UAI2wB0b)
 
 ### 如何参与开源项目
 
