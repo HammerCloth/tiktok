@@ -40,6 +40,7 @@
    - [整体的架构图](#整体的架构图)
    - [数据库的设计](#数据库的设计)
    - [Redis架构的设计](#Redis架构的设计)
+   - [RabbitMQ架构的设计](#RabbitMQ架构的设计)
    - [服务模块的设计](#服务模块的设计)
      - [视频模块设计](#视频模块的设计)
      - [点赞模块设计](#点赞模块设计)
@@ -50,6 +51,8 @@
 - [部署](#部署)
 - [使用到的技术](#使用到的技术)
 - [未来展望](#未来展望)
+  - [分布式服务](#分布式服务)
+  - [推荐视频展望](#推荐视频展望)
 - [如何参与开源项目](#如何参与开源项目)
 - [版本控制](#版本控制)
 - [贡献者](#贡献者)
@@ -146,6 +149,13 @@ tiktok
   </a>
 </p>
 
+#### RabbitMQ架构的设计
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/rabbitmq.jpg" alt="Logo" width="1000" height="600">
+  </a>
+</p>
+
 #### 服务模块的设计
 
 ###### 视频模块的设计
@@ -202,12 +212,23 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./
 - [MySQL](https://dev.mysql.com/doc/)
 
 ### 未来展望
+#### 分布式服务
 利用dubbogo来完成分布式，貔貅作为网关，Nacos作为注册中心，将五个模块分别布置到不同的服务器上，以rpc调用的方式来调用当前模块依赖其他模块的方法，做到分布式处理与解耦。
 <p align="center">
   <a href="https://github.com/HammerCloth/tiktok.git/">
     <img src="images/future.png" alt="Logo" width="1000" height="600">
   </a>
 </p>
+
+#### 推荐视频展望
+队伍创新推荐算法
+<p align="center">
+  <a href="https://github.com/HammerCloth/tiktok.git/">
+    <img src="images/recommend.jpg" alt="Logo" width="1000" height="600">
+  </a>
+</p>
+
+详情请阅读[视频推荐展望](https://bytedancecampus1.feishu.cn/docx/doxcnVIK62rWgR0iE49UAI2wB0b)
 
 ### 如何参与开源项目
 
