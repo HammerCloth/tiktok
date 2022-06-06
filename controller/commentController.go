@@ -3,6 +3,7 @@ package controller
 import (
 	"TikTok/dao"
 	"TikTok/service"
+	"TikTok/util"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -71,6 +72,16 @@ func CommentAction(c *gin.Context) {
 	commentService := new(service.CommentServiceImpl)
 	if actionType == 1 { //actionType为1，则进行发表评论操作
 		content := c.Query("comment_text")
+		// 垃圾评论过滤。
+		find, _ := util.Filter.FindIn(content)
+		if find {
+			log.Println("垃圾评论")
+			c.JSON(http.StatusOK, CommentActionResponse{
+				StatusCode: -1,
+				StatusMsg:  "垃圾评论",
+			})
+			return
+		}
 		//发表评论数据准备
 		var sendComment dao.Comment
 		sendComment.UserId = userId

@@ -3,6 +3,7 @@ package main
 import (
 	"TikTok/dao"
 	"TikTok/middleware"
+	"TikTok/util"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 )
@@ -39,4 +40,6 @@ func initDeps() {
 	middleware.InitLikeRabbitMQ()
 	//初始化Comment的消息队列，并开启消费
 	middleware.InitCommentRabbitMQ()
+	//初始化敏感词拦截器。
+	util.InitFilter()
 }
