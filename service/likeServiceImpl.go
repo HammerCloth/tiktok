@@ -57,15 +57,15 @@ func (like *LikeServiceImpl) IsFavourite(videoId int64, userId int64) (bool, err
 			log.Printf("方法:IsFavourite RedisLikeVideoId query value成功")
 			return exist, nil
 		} else {
-			//key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, -1).Result(); err != nil {
+			//key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, config.DefaultRedisValue).Result(); err != nil {
 				log.Printf("方法:IsFavourite RedisLikeUserId add value失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
 				return false, err
 			}
 			//给键值设置有效期，类似于gc机制
 			_, err := middleware.RdbLikeUserId.Expire(middleware.Ctx, strUserId,
-				time.Duration(config.OneYear)*time.Second).Result()
+				time.Duration(config.OneMonth)*time.Second).Result()
 			if err != nil {
 				log.Printf("方法:IsFavourite RedisLikeUserId 设置有效期失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
@@ -116,17 +116,17 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 			return 0, err1
 		}
 		log.Printf("方法:FavouriteCount RedisLikeVideoId query count 成功")
-		return count - 1, nil //去掉-1
+		return count - 1, nil //去掉DefaultRedisValue
 	} else {
-		//key:strVideoId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-		if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, -1).Result(); err != nil {
+		//key:strVideoId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+		if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, config.DefaultRedisValue).Result(); err != nil {
 			log.Printf("方法:FavouriteCount RedisLikeVideoId add value失败")
 			middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
 			return 0, err
 		}
 		//给键值设置有效期，类似于gc机制
 		_, err := middleware.RdbLikeVideoId.Expire(middleware.Ctx, strVideoId,
-			time.Duration(config.OneYear)*time.Second).Result()
+			time.Duration(config.OneMonth)*time.Second).Result()
 		if err != nil {
 			log.Printf("方法:FavouriteCount RedisLikeVideoId 设置有效期失败")
 			middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
@@ -152,7 +152,7 @@ func (like *LikeServiceImpl) FavouriteCount(videoId int64) (int64, error) {
 			return 0, err2
 		}
 		log.Printf("方法:FavouriteCount RedisLikeVideoId query count 成功")
-		return count - 1, nil //去掉-1
+		return count - 1, nil //去掉DefaultRedisValue
 	}
 }
 
@@ -191,18 +191,18 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				//同样这条信息消费成功与否也不重要，因为redis是正确信息,理由如上
 				middleware.RmqLikeAdd.Publish(sb.String())
 			}
-		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId,设置过期时间，加入-1，
-			//key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId,设置过期时间，加入DefaultRedisValue，
+			//key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
 			//通过userId查询likes表,返回所有点赞videoId，加入key:strUserId集合中,
 			//再加入当前videoId,再更新likes表此条数据
-			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, -1).Result(); err != nil {
+			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, config.DefaultRedisValue).Result(); err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeUserId add value失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
 				return err
 			}
 			//给键值设置有效期，类似于gc机制
 			_, err := middleware.RdbLikeUserId.Expire(middleware.Ctx, strUserId,
-				time.Duration(config.OneYear)*time.Second).Result()
+				time.Duration(config.OneMonth)*time.Second).Result()
 			if err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeUserId 设置有效期失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
@@ -242,18 +242,18 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败：%v", err1)
 				return err1
 			}
-		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId，设置有效期，加入-1
+		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId，设置有效期，加入DefaultRedisValue
 			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
 			//再加入当前userId,再更新likes表此条数据
-			//key:strVideoId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-			if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, -1).Result(); err != nil {
+			//key:strVideoId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+			if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, config.DefaultRedisValue).Result(); err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败")
 				middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
 				return err
 			}
 			//给键值设置有效期，类似于gc机制
 			_, err := middleware.RdbLikeVideoId.Expire(middleware.Ctx, strVideoId,
-				time.Duration(config.OneYear)*time.Second).Result()
+				time.Duration(config.OneMonth)*time.Second).Result()
 			if err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId 设置有效期失败")
 				middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
@@ -294,19 +294,19 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				//后续数据库的操作，可以在mq里设置若执行数据库更新操作失败，重新消费该信息
 				middleware.RmqLikeDel.Publish(sb.String())
 			}
-		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库
+		} else { //如果不存在，则维护Redis LikeUserId 新建key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库
 			// 还没更新完出现脏读，或者数据库操作失败造成的脏读
 			//通过userId查询likes表,返回所有点赞videoId，加入key:strUserId集合中,
 			//再删除当前videoId,再更新likes表此条数据
-			//key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, -1).Result(); err != nil {
+			//key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+			if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, config.DefaultRedisValue).Result(); err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeUserId add value失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
 				return err
 			}
 			//给键值设置有效期，类似于gc机制
 			_, err := middleware.RdbLikeUserId.Expire(middleware.Ctx, strUserId,
-				time.Duration(config.OneYear)*time.Second).Result()
+				time.Duration(config.OneMonth)*time.Second).Result()
 			if err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeUserId 设置有效期失败")
 				middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
@@ -347,19 +347,19 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 				log.Printf("方法:FavouriteAction RedisLikeVideoId del value失败：%v", err1)
 				return err1
 			}
-		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId,加入value:-1,过期才会删，防止删最后一个数据的时候数据库
+		} else { //如果不存在，则维护Redis LikeVideoId 新建key:strVideoId,加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库
 			// 还没更新完出现脏读，或者数据库操作失败造成的脏读
 			//通过videoId查询likes表,返回所有点赞userId，加入key:strVideoId集合中,
 			//再删除当前userId,再更新likes表此条数据
-			//key:strVideoId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-			if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, -1).Result(); err != nil {
+			//key:strVideoId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+			if _, err := middleware.RdbLikeVideoId.SAdd(middleware.Ctx, strVideoId, config.DefaultRedisValue).Result(); err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId add value失败")
 				middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
 				return err
 			}
 			//给键值设置有效期，类似于gc机制
 			_, err := middleware.RdbLikeVideoId.Expire(middleware.Ctx, strVideoId,
-				time.Duration(config.OneYear)*time.Second).Result()
+				time.Duration(config.OneMonth)*time.Second).Result()
 			if err != nil {
 				log.Printf("方法:FavouriteAction RedisLikeVideoId 设置有效期失败")
 				middleware.RdbLikeVideoId.Del(middleware.Ctx, strVideoId)
@@ -413,7 +413,7 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		//提前开辟点赞列表空间
 		favoriteVideoList := new([]Video)
 		//采用协程并发将Video类型对象添加到集合中去
-		i := len(videoIdList) - 1 //去掉-1
+		i := len(videoIdList) - 1 //去掉DefaultRedisValue
 		if i == 0 {
 			return *favoriteVideoList, nil
 		}
@@ -422,7 +422,7 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		for j := 0; j <= i; j++ {
 			//将string videoId转换为 int64 VideoId
 			videoId, _ := strconv.ParseInt(videoIdList[j], 10, 64)
-			if videoId == -1 {
+			if videoId == config.DefaultRedisValue {
 				continue
 			}
 			go like.addFavouriteVideoList(videoId, curId, favoriteVideoList, &wg)
@@ -430,15 +430,15 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		wg.Wait()
 		return *favoriteVideoList, nil
 	} else { //如果Redis LikeUserId不存在此key,通过userId查询likes表,返回所有点赞videoId，并维护到Redis LikeUserId(key:strUserId)
-		//key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-		if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, -1).Result(); err != nil {
+		//key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+		if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, config.DefaultRedisValue).Result(); err != nil {
 			log.Printf("方法:GetFavouriteList RedisLikeUserId add value失败")
 			middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
 			return nil, err
 		}
 		//给键值设置有效期，类似于gc机制
 		_, err := middleware.RdbLikeUserId.Expire(middleware.Ctx, strUserId,
-			time.Duration(config.OneYear)*time.Second).Result()
+			time.Duration(config.OneMonth)*time.Second).Result()
 		if err != nil {
 			log.Printf("方法:GetFavouriteList RedisLikeUserId 设置有效期失败")
 			middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
@@ -453,14 +453,14 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		//提前开辟点赞列表空间
 		favoriteVideoList := new([]Video)
 		//采用协程并发将Video类型对象添加到集合中去
-		i := len(videoIdList) - 1 //去掉-1
+		i := len(videoIdList) - 1 //去掉DefaultRedisValue
 		if i == 0 {
 			return *favoriteVideoList, nil
 		}
 		var wg sync.WaitGroup
 		wg.Add(i)
 		for j := 0; j <= i; j++ {
-			if videoIdList[j] == -1 {
+			if videoIdList[j] == config.DefaultRedisValue {
 				continue
 			}
 			go like.addFavouriteVideoList(videoIdList[j], curId, favoriteVideoList, &wg)
@@ -528,20 +528,20 @@ func (like *LikeServiceImpl) FavouriteVideoCount(userId int64) (int64, error) {
 				return 0, err1
 			}
 			log.Printf("方法:FavouriteVideoCount RdbLikeUserId query count 成功")
-			return count - 1, nil //去掉-1
+			return count - 1, nil //去掉DefaultRedisValue
 
 		}
 	} else { //如果Redis LikeUserId不存在此key,通过userId查询likes表,返回所有点赞videoId，并维护到Redis LikeUserId(key:strUserId)
 		//再通过set集合中userId个数,获取点赞数量
-		//key:strUserId，加入value:-1,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
-		if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, -1).Result(); err != nil {
+		//key:strUserId，加入value:DefaultRedisValue,过期才会删，防止删最后一个数据的时候数据库还没更新完出现脏读，或者数据库操作失败造成的脏读
+		if _, err := middleware.RdbLikeUserId.SAdd(middleware.Ctx, strUserId, config.DefaultRedisValue).Result(); err != nil {
 			log.Printf("方法:FavouriteVideoCount RedisLikeUserId add value失败")
 			middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
 			return 0, err
 		}
 		//给键值设置有效期，类似于gc机制
 		_, err := middleware.RdbLikeUserId.Expire(middleware.Ctx, strUserId,
-			time.Duration(config.OneYear)*time.Second).Result()
+			time.Duration(config.OneMonth)*time.Second).Result()
 		if err != nil {
 			log.Printf("方法:FavouriteVideoCount RedisLikeUserId 设置有效期失败")
 			middleware.RdbLikeUserId.Del(middleware.Ctx, strUserId)
@@ -569,7 +569,7 @@ func (like *LikeServiceImpl) FavouriteVideoCount(userId int64) (int64, error) {
 			return 0, err2
 		}
 		log.Printf("方法:FavouriteVideoCount RdbLikeUserId query count 成功")
-		return count - 1, nil //去掉-1
+		return count - 1, nil //去掉DefaultRedisValue
 	}
 }
 

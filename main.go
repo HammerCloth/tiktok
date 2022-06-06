@@ -10,7 +10,7 @@ import (
 //如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
 func main() {
 	//关闭log
-	//log.SetOutput(ioutil.Discard)
+	// log.SetOutput(ioutil.Discard)
 	initDeps()
 	//gin
 	r := gin.Default()
