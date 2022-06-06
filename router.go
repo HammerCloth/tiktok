@@ -10,7 +10,7 @@ func initRouter(r *gin.Engine) {
 	apiRouter := r.Group("/douyin")
 	// basic apis
 	apiRouter.GET("/feed/", middleware.Auth(), controller.Feed)
-	apiRouter.POST("/publish/action/", middleware.Auth_body(), controller.Publish)
+	apiRouter.POST("/publish/action/", middleware.AuthBody(), controller.Publish)
 	apiRouter.GET("/publish/list/", middleware.Auth(), controller.PublishList)
 	apiRouter.GET("/user/", middleware.Auth(), controller.UserInfo)
 	apiRouter.POST("/user/register/", controller.Register)
@@ -24,5 +24,4 @@ func initRouter(r *gin.Engine) {
 	apiRouter.POST("/relation/action/", middleware.Auth(), controller.RelationAction)
 	apiRouter.GET("/relation/follow/list/", middleware.Auth(), controller.GetFollowing)
 	apiRouter.GET("/relation/follower/list", middleware.Auth(), controller.GetFollowers)
-
 }
