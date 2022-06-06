@@ -9,7 +9,7 @@ import (
 func initRouter(r *gin.Engine) {
 	apiRouter := r.Group("/douyin")
 	// basic apis
-	apiRouter.GET("/feed/", middleware.Auth(), controller.Feed)
+	apiRouter.GET("/feed/", middleware.AuthWithoutLogin(), controller.Feed)
 	apiRouter.POST("/publish/action/", middleware.AuthBody(), controller.Publish)
 	apiRouter.GET("/publish/list/", middleware.Auth(), controller.PublishList)
 	apiRouter.GET("/user/", middleware.Auth(), controller.UserInfo)
