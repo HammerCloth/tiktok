@@ -2,7 +2,10 @@ package main
 
 import (
 	"TikTok/dao"
-	"TikTok/middleware"
+	"TikTok/middleware/ffmpeg"
+	"TikTok/middleware/ftp"
+	"TikTok/middleware/rabbitmq"
+	"TikTok/middleware/redis"
 	"TikTok/util"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -11,7 +14,7 @@ import (
 //如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
 func main() {
 	//关闭log
-	// log.SetOutput(ioutil.Discard)
+	//log.SetOutput(ioutil.Discard)
 	initDeps()
 	//gin
 	r := gin.Default()
@@ -26,20 +29,20 @@ func initDeps() {
 	// 初始化数据库
 	dao.Init()
 	// 初始化FTP服务器链接
-	dao.InitFTP()
+	ftp.InitFTP()
 	// 初始化SSH
-	middleware.InitSSH()
+	ffmpeg.InitSSH()
 
 	// 初始化redis-DB0的连接，follow选择的DB0.
-	middleware.InitRedis()
+	redis.InitRedis()
 	// 初始化rabbitMQ。
-	middleware.InitRabbitMQ()
+	rabbitmq.InitRabbitMQ()
 	// 初始化Follow的相关消息队列，并开启消费。
-	middleware.InitFollowRabbitMQ()
+	rabbitmq.InitFollowRabbitMQ()
 	// 初始化Like的相关消息队列，并开启消费。
-	middleware.InitLikeRabbitMQ()
+	rabbitmq.InitLikeRabbitMQ()
 	//初始化Comment的消息队列，并开启消费
-	middleware.InitCommentRabbitMQ()
+	rabbitmq.InitCommentRabbitMQ()
 	//初始化敏感词拦截器。
 	util.InitFilter()
 }

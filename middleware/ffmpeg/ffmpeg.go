@@ -1,4 +1,4 @@
-package middleware
+package ffmpeg
 
 import (
 	"TikTok/config"

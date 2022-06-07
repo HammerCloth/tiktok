@@ -3,7 +3,8 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
-	"TikTok/middleware"
+	"TikTok/middleware/rabbitmq"
+	"TikTok/middleware/redis"
 	"log"
 	"strconv"
 	"strings"
@@ -38,9 +39,9 @@ func NewFSIInstance() *FollowServiceImp {
 // IsFollowing 给定当前用户和目标用户id，判断是否存在关注关系。
 func (*FollowServiceImp) IsFollowing(userId int64, targetId int64) (bool, error) {
 	// 先查Redis里面是否有此关系。
-	if flag, err := middleware.RdbFollowingPart.SIsMember(middleware.Ctx, strconv.Itoa(int(userId)), targetId).Result(); flag {
+	if flag, err := redis.RdbFollowingPart.SIsMember(redis.Ctx, strconv.Itoa(int(userId)), targetId).Result(); flag {
 		// 重现设置过期时间。
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
+		redis.RdbFollowingPart.Expire(redis.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
 		return true, err
 	}
 	// SQL 查询。
@@ -59,19 +60,19 @@ func (*FollowServiceImp) IsFollowing(userId int64, targetId int64) (bool, error)
 }
 func addRelationToRedis(userId int, targetId int) {
 	// 第一次存入时，给该key添加一个-1为key，防止脏数据的写入。当然set可以去重，直接加，便于CPU。
-	middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(int(userId)), -1)
+	redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(int(userId)), -1)
 	// 将查询到的关注关系注入Redis.
-	middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(int(userId)), targetId)
+	redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(int(userId)), targetId)
 	// 更新过期时间。
-	middleware.RdbFollowingPart.Expire(middleware.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
+	redis.RdbFollowingPart.Expire(redis.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
 }
 
 // GetFollowerCnt 给定当前用户id，查询其粉丝数量。
 func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
 	// 查Redis中是否已经存在。
-	if cnt, err := middleware.RdbFollowers.SCard(middleware.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
+	if cnt, err := redis.RdbFollowers.SCard(redis.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
 		// 更新过期时间。
-		middleware.RdbFollowers.Expire(middleware.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
+		redis.RdbFollowers.Expire(redis.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
 		return cnt - 1, err
 	}
 	// SQL中查询。
@@ -86,26 +87,26 @@ func (*FollowServiceImp) GetFollowerCnt(userId int64) (int64, error) {
 	return int64(len(ids)), err
 }
 func addFollowersToRedis(userId int, ids []int64) {
-	middleware.RdbFollowers.SAdd(middleware.Ctx, strconv.Itoa(userId), -1)
+	redis.RdbFollowers.SAdd(redis.Ctx, strconv.Itoa(userId), -1)
 	for i, id := range ids {
-		middleware.RdbFollowers.SAdd(middleware.Ctx, strconv.Itoa(userId), id)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(int(id)), userId)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(int(id)), -1)
+		redis.RdbFollowers.SAdd(redis.Ctx, strconv.Itoa(userId), id)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(int(id)), userId)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(int(id)), -1)
 		// 更新部分关注者的时间
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, strconv.Itoa(int(id)),
+		redis.RdbFollowingPart.Expire(redis.Ctx, strconv.Itoa(int(id)),
 			config.ExpireTime+time.Duration((i%10)<<8))
 	}
 	// 更新followers的过期时间。
-	middleware.RdbFollowers.Expire(middleware.Ctx, strconv.Itoa(userId), config.ExpireTime)
+	redis.RdbFollowers.Expire(redis.Ctx, strconv.Itoa(userId), config.ExpireTime)
 
 }
 
 // GetFollowingCnt 给定当前用户id，查询其关注者数量。
 func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
 	// 查看Redis中是否有关注数。
-	if cnt, err := middleware.RdbFollowing.SCard(middleware.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
+	if cnt, err := redis.RdbFollowing.SCard(redis.Ctx, strconv.Itoa(int(userId))).Result(); cnt > 0 {
 		// 更新过期时间。
-		middleware.RdbFollowing.Expire(middleware.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
+		redis.RdbFollowing.Expire(redis.Ctx, strconv.Itoa(int(userId)), config.ExpireTime)
 		return cnt - 1, err
 	}
 	// 用SQL查询。
@@ -120,17 +121,17 @@ func (*FollowServiceImp) GetFollowingCnt(userId int64) (int64, error) {
 	return int64(len(ids)), err
 }
 func addFollowingToRedis(userId int, ids []int64) {
-	middleware.RdbFollowing.SAdd(middleware.Ctx, strconv.Itoa(userId), -1)
+	redis.RdbFollowing.SAdd(redis.Ctx, strconv.Itoa(userId), -1)
 	for i, id := range ids {
-		middleware.RdbFollowing.SAdd(middleware.Ctx, strconv.Itoa(userId), id)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(userId), id)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, strconv.Itoa(userId), -1)
+		redis.RdbFollowing.SAdd(redis.Ctx, strconv.Itoa(userId), id)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(userId), id)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, strconv.Itoa(userId), -1)
 		// 更新过期时间
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, strconv.Itoa(userId),
+		redis.RdbFollowingPart.Expire(redis.Ctx, strconv.Itoa(userId),
 			config.ExpireTime+time.Duration((i%10)<<8))
 	}
 	// 更新following的过期时间
-	middleware.RdbFollowing.Expire(middleware.Ctx, strconv.Itoa(userId), config.ExpireTime)
+	redis.RdbFollowing.Expire(redis.Ctx, strconv.Itoa(userId), config.ExpireTime)
 }
 
 // AddFollowRelation 给定当前用户和目标对象id，添加他们之间的关注关系。
@@ -140,7 +141,7 @@ func (*FollowServiceImp) AddFollowRelation(userId int64, targetId int64) (bool, 
 	sb.WriteString(strconv.Itoa(int(userId)))
 	sb.WriteString(" ")
 	sb.WriteString(strconv.Itoa(int(targetId)))
-	middleware.RmqFollowAdd.Publish(sb.String())
+	rabbitmq.RmqFollowAdd.Publish(sb.String())
 	// 记录日志
 	log.Println("消息打入成功。")
 	// 更新redis信息。
@@ -180,22 +181,22 @@ func updateRedisWithAdd(userId int64, targetId int64) (bool, error) {
 	*/
 	// step1
 	targetIdStr := strconv.Itoa(int(targetId))
-	if cnt, _ := middleware.RdbFollowers.SCard(middleware.Ctx, targetIdStr).Result(); 0 != cnt {
-		middleware.RdbFollowers.SAdd(middleware.Ctx, targetIdStr, userId)
-		middleware.RdbFollowers.Expire(middleware.Ctx, targetIdStr, config.ExpireTime)
+	if cnt, _ := redis.RdbFollowers.SCard(redis.Ctx, targetIdStr).Result(); 0 != cnt {
+		redis.RdbFollowers.SAdd(redis.Ctx, targetIdStr, userId)
+		redis.RdbFollowers.Expire(redis.Ctx, targetIdStr, config.ExpireTime)
 	}
 	// step2
 	followingUserIdStr := strconv.Itoa(int(userId))
-	if cnt, _ := middleware.RdbFollowing.SCard(middleware.Ctx, followingUserIdStr).Result(); 0 != cnt {
-		middleware.RdbFollowing.SAdd(middleware.Ctx, followingUserIdStr, targetId)
-		middleware.RdbFollowing.Expire(middleware.Ctx, followingUserIdStr, config.ExpireTime)
+	if cnt, _ := redis.RdbFollowing.SCard(redis.Ctx, followingUserIdStr).Result(); 0 != cnt {
+		redis.RdbFollowing.SAdd(redis.Ctx, followingUserIdStr, targetId)
+		redis.RdbFollowing.Expire(redis.Ctx, followingUserIdStr, config.ExpireTime)
 	}
 	// step3
 	followingPartUserIdStr := followingUserIdStr
-	middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingPartUserIdStr, targetId)
+	redis.RdbFollowingPart.SAdd(redis.Ctx, followingPartUserIdStr, targetId)
 	// 可能是第一次给改用户加followingPart的关注者，需要加上-1防止脏读。
-	middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingPartUserIdStr, -1)
-	middleware.RdbFollowingPart.Expire(middleware.Ctx, followingPartUserIdStr, config.ExpireTime)
+	redis.RdbFollowingPart.SAdd(redis.Ctx, followingPartUserIdStr, -1)
+	redis.RdbFollowingPart.Expire(redis.Ctx, followingPartUserIdStr, config.ExpireTime)
 	return true, nil
 }
 
@@ -206,7 +207,7 @@ func (*FollowServiceImp) DeleteFollowRelation(userId int64, targetId int64) (boo
 	sb.WriteString(strconv.Itoa(int(userId)))
 	sb.WriteString(" ")
 	sb.WriteString(strconv.Itoa(int(targetId)))
-	middleware.RmqFollowDel.Publish(sb.String())
+	rabbitmq.RmqFollowDel.Publish(sb.String())
 	// 记录日志
 	log.Println("消息打入成功。")
 	// 更新redis信息。
@@ -240,21 +241,21 @@ func updateRedisWithDel(userId int64, targetId int64) (bool, error) {
 	*/
 	// step1
 	targetIdStr := strconv.Itoa(int(targetId))
-	if cnt, _ := middleware.RdbFollowers.SCard(middleware.Ctx, targetIdStr).Result(); 0 != cnt {
-		middleware.RdbFollowers.SRem(middleware.Ctx, targetIdStr, userId)
-		middleware.RdbFollowers.Expire(middleware.Ctx, targetIdStr, config.ExpireTime)
+	if cnt, _ := redis.RdbFollowers.SCard(redis.Ctx, targetIdStr).Result(); 0 != cnt {
+		redis.RdbFollowers.SRem(redis.Ctx, targetIdStr, userId)
+		redis.RdbFollowers.Expire(redis.Ctx, targetIdStr, config.ExpireTime)
 	}
 	// step2
 	followingIdStr := strconv.Itoa(int(userId))
-	if cnt, _ := middleware.RdbFollowing.SCard(middleware.Ctx, followingIdStr).Result(); 0 != cnt {
-		middleware.RdbFollowing.SRem(middleware.Ctx, followingIdStr, targetId)
-		middleware.RdbFollowing.Expire(middleware.Ctx, followingIdStr, config.ExpireTime)
+	if cnt, _ := redis.RdbFollowing.SCard(redis.Ctx, followingIdStr).Result(); 0 != cnt {
+		redis.RdbFollowing.SRem(redis.Ctx, followingIdStr, targetId)
+		redis.RdbFollowing.Expire(redis.Ctx, followingIdStr, config.ExpireTime)
 	}
 	// step3
 	followingPartUserIdStr := followingIdStr
-	if cnt, _ := middleware.RdbFollowingPart.Exists(middleware.Ctx, followingPartUserIdStr).Result(); 0 != cnt {
-		middleware.RdbFollowingPart.SRem(middleware.Ctx, followingPartUserIdStr, targetId)
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, followingPartUserIdStr, config.ExpireTime)
+	if cnt, _ := redis.RdbFollowingPart.Exists(redis.Ctx, followingPartUserIdStr).Result(); 0 != cnt {
+		redis.RdbFollowingPart.SRem(redis.Ctx, followingPartUserIdStr, targetId)
+		redis.RdbFollowingPart.Expire(redis.Ctx, followingPartUserIdStr, config.ExpireTime)
 	}
 	return true, nil
 }
@@ -343,16 +344,16 @@ func setRedisFollowing(userId int64, users []User) {
 	*/
 	// 加上-1防止脏读
 	followingIdStr := strconv.Itoa(int(userId))
-	middleware.RdbFollowing.SAdd(middleware.Ctx, followingIdStr, -1)
+	redis.RdbFollowing.SAdd(redis.Ctx, followingIdStr, -1)
 	// 设置过期时间
-	middleware.RdbFollowing.Expire(middleware.Ctx, followingIdStr, config.ExpireTime)
+	redis.RdbFollowing.Expire(redis.Ctx, followingIdStr, config.ExpireTime)
 	for i, user := range users {
-		middleware.RdbFollowing.SAdd(middleware.Ctx, followingIdStr, user.Id)
+		redis.RdbFollowing.SAdd(redis.Ctx, followingIdStr, user.Id)
 
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingIdStr, user.Id)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, followingIdStr, -1)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, followingIdStr, user.Id)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, followingIdStr, -1)
 		// 随机设置过期时间
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, followingIdStr, config.ExpireTime+
+		redis.RdbFollowingPart.Expire(redis.Ctx, followingIdStr, config.ExpireTime+
 			time.Duration((i%10)<<8))
 	}
 }
@@ -494,23 +495,23 @@ func setRedisFollowers(userId int64, users []User) {
 	*/
 	// 加上-1防止脏读。
 	followersIdStr := strconv.Itoa(int(userId))
-	middleware.RdbFollowers.SAdd(middleware.Ctx, followersIdStr, -1)
+	redis.RdbFollowers.SAdd(redis.Ctx, followersIdStr, -1)
 	// 设置过期时间
-	middleware.RdbFollowers.Expire(middleware.Ctx, followersIdStr, config.ExpireTime)
+	redis.RdbFollowers.Expire(redis.Ctx, followersIdStr, config.ExpireTime)
 	for i, user := range users {
-		middleware.RdbFollowers.SAdd(middleware.Ctx, followersIdStr, user.Id)
+		redis.RdbFollowers.SAdd(redis.Ctx, followersIdStr, user.Id)
 
 		userUserIdStr := strconv.Itoa(int(user.Id))
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, userUserIdStr, userId)
-		middleware.RdbFollowingPart.SAdd(middleware.Ctx, userUserIdStr, -1)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, userUserIdStr, userId)
+		redis.RdbFollowingPart.SAdd(redis.Ctx, userUserIdStr, -1)
 		// 随机更新过期时间
-		middleware.RdbFollowingPart.Expire(middleware.Ctx, userUserIdStr, config.ExpireTime+
+		redis.RdbFollowingPart.Expire(redis.Ctx, userUserIdStr, config.ExpireTime+
 			time.Duration((i%10)<<8))
 
 		if user.IsFollow {
-			middleware.RdbFollowingPart.SAdd(middleware.Ctx, followersIdStr, user.Id)
-			middleware.RdbFollowingPart.SAdd(middleware.Ctx, followersIdStr, -1)
-			middleware.RdbFollowingPart.Expire(middleware.Ctx, followersIdStr, config.ExpireTime+
+			redis.RdbFollowingPart.SAdd(redis.Ctx, followersIdStr, user.Id)
+			redis.RdbFollowingPart.SAdd(redis.Ctx, followersIdStr, -1)
+			redis.RdbFollowingPart.Expire(redis.Ctx, followersIdStr, config.ExpireTime+
 				time.Duration((i%10)<<8))
 		}
 	}

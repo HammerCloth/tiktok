@@ -1,4 +1,4 @@
-package middleware
+package jwt
 
 import (
 	"fmt"

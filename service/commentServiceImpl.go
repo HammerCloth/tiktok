@@ -3,7 +3,8 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
-	"TikTok/middleware"
+	"TikTok/middleware/rabbitmq"
+	"TikTok/middleware/redis"
 	"log"
 	"strconv"
 	"sync"
@@ -18,7 +19,7 @@ type CommentServiceImpl struct {
 // 1、使用video id 查询Comment数量
 func (c CommentServiceImpl) CountFromVideoId(videoId int64) (int64, error) {
 	//先在缓存中查
-	cnt, err := middleware.RdbVCid.SCard(middleware.Ctx, strconv.FormatInt(videoId, 10)).Result()
+	cnt, err := redis.RdbVCid.SCard(redis.Ctx, strconv.FormatInt(videoId, 10)).Result()
 	if err != nil { //若查询缓存出错，则打印log
 		//return 0, err
 		log.Println("count from redis error:", err)
@@ -40,13 +41,13 @@ func (c CommentServiceImpl) CountFromVideoId(videoId int64) (int64, error) {
 		//查询评论id list
 		cList, _ := dao.CommentIdList(videoId)
 		//先在redis中存储一个0值，防止脏读
-		_, _err := middleware.RdbVCid.SAdd(middleware.Ctx, strconv.Itoa(int(videoId)), config.DefaultRedisValue).Result()
+		_, _err := redis.RdbVCid.SAdd(redis.Ctx, strconv.Itoa(int(videoId)), config.DefaultRedisValue).Result()
 		if _err != nil { //若存储redis失败，则直接返回
 			log.Println("redis save one vId - cId 0 failed")
 			return
 		}
 		//设置key值过期时间
-		_, err := middleware.RdbVCid.Expire(middleware.Ctx, strconv.Itoa(int(videoId)),
+		_, err := redis.RdbVCid.Expire(redis.Ctx, strconv.Itoa(int(videoId)),
 			time.Duration(config.OneMonth)*time.Second).Result()
 		if err != nil {
 			log.Println("redis save one vId - cId expire failed")
@@ -54,14 +55,14 @@ func (c CommentServiceImpl) CountFromVideoId(videoId int64) (int64, error) {
 		//评论id循环存入redis
 		for _, _comment := range cList {
 			//insertRedisVideoCommentId(strconv.Itoa(int(videoId)), _comment)
-			_, _err := middleware.RdbVCid.SAdd(middleware.Ctx, strconv.Itoa(int(videoId)), _comment).Result()
+			_, _err := redis.RdbVCid.SAdd(redis.Ctx, strconv.Itoa(int(videoId)), _comment).Result()
 			if _err != nil { //若存储redis失败，则直接删除key
 				log.Println("redis save one vId - cId failed, key deleted")
-				middleware.RdbVCid.Del(middleware.Ctx, strconv.Itoa(int(videoId)))
+				redis.RdbVCid.Del(redis.Ctx, strconv.Itoa(int(videoId)))
 				return
 			}
 			//一对一的db存储失败不用删除，不影响正确性
-			_, _err = middleware.RdbCVid.Set(middleware.Ctx, _comment, strconv.Itoa(int(videoId)), 0).Result()
+			_, _err = redis.RdbCVid.Set(redis.Ctx, _comment, strconv.Itoa(int(videoId)), 0).Result()
 			if _err != nil {
 				log.Println("redis save one cId - vId failed")
 			}
@@ -118,21 +119,21 @@ func (c CommentServiceImpl) Send(comment dao.Comment) (CommentInfo, error) {
 func (c CommentServiceImpl) DelComment(commentId int64) error {
 	log.Println("CommentService-DelComment: running") //函数已运行
 	//1.先查询redis，若有则删除，返回客户端-再go协程删除数据库；无则在数据库中删除，返回客户端。
-	n, err := middleware.RdbCVid.Exists(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+	n, err := redis.RdbCVid.Exists(redis.Ctx, strconv.FormatInt(commentId, 10)).Result()
 	if err != nil {
 		log.Println(err)
 	}
 	if n > 0 { //在缓存中有此值，则找出来删除，然后返回
-		vid, err1 := middleware.RdbCVid.Get(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+		vid, err1 := redis.RdbCVid.Get(redis.Ctx, strconv.FormatInt(commentId, 10)).Result()
 		if err1 != nil { //没找到，返回err
 			log.Println("redis find CV err:", err1)
 		}
 		//删除，两个redis都要删除
-		del1, err2 := middleware.RdbCVid.Del(middleware.Ctx, strconv.FormatInt(commentId, 10)).Result()
+		del1, err2 := redis.RdbCVid.Del(redis.Ctx, strconv.FormatInt(commentId, 10)).Result()
 		if err2 != nil {
 			log.Println(err2)
 		}
-		del2, err3 := middleware.RdbVCid.SRem(middleware.Ctx, vid, strconv.FormatInt(commentId, 10)).Result()
+		del2, err3 := redis.RdbVCid.SRem(redis.Ctx, vid, strconv.FormatInt(commentId, 10)).Result()
 		if err3 != nil {
 			log.Println(err3)
 		}
@@ -161,7 +162,7 @@ func (c CommentServiceImpl) DelComment(commentId int64) error {
 
 		//使用mq进行数据库中评论的删除-评论状态更新
 		//评论id传入消息队列
-		middleware.RmqCommentDel.Publish(strconv.FormatInt(commentId, 10))
+		rabbitmq.RmqCommentDel.Publish(strconv.FormatInt(commentId, 10))
 		return nil
 	}
 	//不在内存中，则直接走数据库删除
@@ -294,14 +295,14 @@ func (c CommentServiceImpl) GetList(videoId int64, userId int64) ([]CommentInfo,
 //在redis中存储video_id对应的comment_id 、 comment_id对应的video_id
 func insertRedisVideoCommentId(videoId string, commentId string) {
 	//在redis-RdbVCid中存储video_id对应的comment_id
-	_, err := middleware.RdbVCid.SAdd(middleware.Ctx, videoId, commentId).Result()
+	_, err := redis.RdbVCid.SAdd(redis.Ctx, videoId, commentId).Result()
 	if err != nil { //若存储redis失败-有err，则直接删除key
 		log.Println("redis save send: vId - cId failed, key deleted")
-		middleware.RdbVCid.Del(middleware.Ctx, videoId)
+		redis.RdbVCid.Del(redis.Ctx, videoId)
 		return
 	}
 	//在redis-RdbCVid中存储comment_id对应的video_id
-	_, err = middleware.RdbCVid.Set(middleware.Ctx, commentId, videoId, 0).Result()
+	_, err = redis.RdbCVid.Set(redis.Ctx, commentId, videoId, 0).Result()
 	if err != nil {
 		log.Println("redis save one cId - vId failed")
 	}
