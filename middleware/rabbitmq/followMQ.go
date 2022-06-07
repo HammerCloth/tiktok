@@ -1,7 +1,8 @@
-package middleware
+package rabbitmq
 
 import (
 	"TikTok/dao"
+	"TikTok/middleware/redis"
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
@@ -150,17 +151,17 @@ func (f *FollowMQ) consumerFollowDel(msgs <-chan amqp.Delivery) {
 func updateRedisWithDel(userId int, targetId int) {
 	// step1 删除粉丝关系。
 	targetIdStr := strconv.Itoa(targetId)
-	if cnt, _ := RdbFollowers.SCard(Ctx, targetIdStr).Result(); 0 != cnt {
-		RdbFollowers.SRem(Ctx, targetIdStr, userId)
+	if cnt, _ := redis.RdbFollowers.SCard(redis.Ctx, targetIdStr).Result(); 0 != cnt {
+		redis.RdbFollowers.SRem(redis.Ctx, targetIdStr, userId)
 	}
 	// step2 删除关注关系。
 	followingIdStr := strconv.Itoa(userId)
-	if cnt, _ := RdbFollowing.SCard(Ctx, followingIdStr).Result(); 0 != cnt {
-		RdbFollowing.SRem(Ctx, followingIdStr, targetId)
+	if cnt, _ := redis.RdbFollowing.SCard(redis.Ctx, followingIdStr).Result(); 0 != cnt {
+		redis.RdbFollowing.SRem(redis.Ctx, followingIdStr, targetId)
 	}
 	// step3 删除部分关注关系。
 	followingPartUserIdStr := strconv.Itoa(userId)
-	RdbFollowingPart.SRem(Ctx, followingPartUserIdStr, targetId)
+	redis.RdbFollowingPart.SRem(redis.Ctx, followingPartUserIdStr, targetId)
 }
 
 var RmqFollowAdd *FollowMQ

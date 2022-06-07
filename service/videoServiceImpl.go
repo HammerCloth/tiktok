@@ -3,7 +3,7 @@ package service
 import (
 	"TikTok/config"
 	"TikTok/dao"
-	"TikTok/middleware"
+	"TikTok/middleware/ffmpeg"
 	"github.com/satori/go.uuid"
 	"log"
 	"mime/multipart"
@@ -84,7 +84,7 @@ func (videoService *VideoServiceImpl) Publish(data *multipart.FileHeader, userId
 	//在服务器上执行ffmpeg 从视频流中获取第一帧截图，并上传图片服务器，保存图片链接
 	imageName := uuid.NewV4().String()
 	//向队列中添加消息
-	middleware.Ffchan <- middleware.Ffmsg{
+	ffmpeg.Ffchan <- ffmpeg.Ffmsg{
 		videoName,
 		imageName,
 	}

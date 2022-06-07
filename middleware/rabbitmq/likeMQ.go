@@ -1,4 +1,4 @@
-package middleware
+package rabbitmq
 
 import (
 	"TikTok/config"

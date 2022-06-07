@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"TikTok/middleware/ftp"
 	"fmt"
 	"testing"
 	"time"
@@ -55,7 +56,7 @@ func TestGetVideosByLastTime(t *testing.T) {
 	}
 }
 func TestVideoFtp(t *testing.T) {
-	InitFTP()
+	ftp.InitFTP()
 	//file, err := os.Open("/Users/siyixiong/Movies/bilibil/bilibil20211219/樱花少女.mp4")
 	//if err != nil {
 	//	panic(err)

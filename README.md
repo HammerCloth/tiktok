@@ -117,9 +117,16 @@ tiktok
 ├── /config/ 配置文件包
 ├── /controller/ 控制器包
 ├── /dao/ 数据库访问
+├── /document/ 敏感词词库
 ├── /images/ 图片引用
 ├── /middleware/ 中间件
+│   ├── ffmpeg/ 视频截图
+│   ├── ftp/ 文件服务器
+│   ├── jwt/ 鉴权
+│   ├── rabbitmq/ 消息队列
+│   ├── redis/ 缓存
 ├── /service/ 服务层
+├── /util/ 工具
 ├── .gitignore
 ├── /go.mod/
 ├── LICENSE
