@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//如果启动有问题，大概是你的IP地址已经改变，需要在服务器中设置
+//如果启动有问题，大概是你的IP地址出现变化，需要在项目依赖的服务器中配置安全组
 func main() {
 	//关闭log
 	//log.SetOutput(ioutil.Discard)
