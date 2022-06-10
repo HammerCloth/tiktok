@@ -370,6 +370,7 @@ func (like *LikeServiceImpl) FavouriteAction(userId int64, videoId int64, action
 			userIdList, err1 := dao.GetLikeUserIdList(videoId)
 			//如果有问题，说明查询失败，返回错误信息："get likeUserIdList failed"
 			if err1 != nil {
+				redis.RdbLikeVideoId.Del(redis.Ctx, strVideoId)
 				return err1
 			}
 			//遍历userIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
@@ -449,7 +450,17 @@ func (like *LikeServiceImpl) GetFavouriteList(userId int64, curId int64) ([]Vide
 		//如果有问题，说明查询数据库失败，返回nil和错误信息:"get likeVideoIdList failed"
 		if err1 != nil {
 			log.Println(err1.Error())
+			redis.RdbLikeUserId.Del(redis.Ctx, strUserId)
 			return nil, err1
+		}
+		//遍历videoIdList,添加进key的集合中，若失败，删除key，并返回错误信息，这么做的原因是防止脏读，
+		//保证redis与mysql数据一致性
+		for _, likeVideoId := range videoIdList {
+			if _, err2 := redis.RdbLikeUserId.SAdd(redis.Ctx, strUserId, likeVideoId).Result(); err2 != nil {
+				log.Printf("方法:GetFavouriteList RedisLikeUserId add value失败")
+				redis.RdbLikeUserId.Del(redis.Ctx, strUserId)
+				return nil, err2
+			}
 		}
 		//提前开辟点赞列表空间
 		favoriteVideoList := new([]Video)
