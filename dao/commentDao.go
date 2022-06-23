@@ -93,10 +93,10 @@ func GetCommentList(videoId int64) ([]Comment, error) {
 	var commentList []Comment
 	result := Db.Model(Comment{}).Where(map[string]interface{}{"video_id": videoId, "cancel": config.ValidComment}).
 		Order("create_date desc").Find(&commentList)
-	//若此视频没有评论信息
+	//若此视频没有评论信息，返回空列表，不报错
 	if result.RowsAffected == 0 {
 		log.Println("CommentDao-GetCommentList: return there are no comments") //函数返回提示无评论
-		return commentList, errors.New("there are no comments")
+		return nil, nil
 	}
 	//若获取评论列表出错
 	if result.Error != nil {
